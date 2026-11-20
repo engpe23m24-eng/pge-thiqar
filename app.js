@@ -1157,26 +1157,6 @@ const App = {
 
           <!-- بيانات التواصل والموقع الجغرافي -->
           <div class="space-y-6">
-            <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800">
-              <h3 class="text-base font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <i data-lucide="map-pin" class="w-5 h-5 text-amber-500"></i>
-                <span>الموقع الأكاديمي للقسم</span>
-              </h3>
-              <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-                العراق، محافظة ذي قار، الناصرية، المجمع الجامعي للمصطفى، كلية الهندسة، مبنى الأقسام الهندسية - قسم هندسة النفط والغاز.
-              </p>
-              
-              <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs space-y-2">
-                <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
-                  <span>أوقات الدوام الرسمي: الأحد إلى الخميس (8:30 ص - 2:30 م)</span>
-                </div>
-                <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <i data-lucide="building" class="w-4 h-4 text-amber-500"></i>
-                  <span>مقر رئاسة القسم: الطابق الأول - بناية كلية الهندسة</span>
-                </div>
-              </div>
-            </div>
 
             <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-amber-50/40 dark:bg-amber-950/20">
               <div class="flex items-start gap-3">
