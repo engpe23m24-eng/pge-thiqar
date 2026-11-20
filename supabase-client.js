@@ -599,7 +599,9 @@ class AcademicDataManager {
     if (index === -1) return null;
 
     if (this.client) {
-      const { error } = await this.client.from('materials').update(updatedFields).eq('id', materialId);
+      // file_data_url is a local preview cache, not a database column or upload payload.
+      const { file_data_url, ...dbPayload } = updatedFields;
+      const { error } = await this.client.from('materials').update(dbPayload).eq('id', materialId);
       if (error) throw new Error('فشل التحديث في قاعدة البيانات: ' + error.message);
     }
 
