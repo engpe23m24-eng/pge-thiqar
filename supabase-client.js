@@ -28,6 +28,8 @@ class AcademicDataManager {
     this.client = null;
     this.currentUser = null;
     this.adminProfile = null;
+    this.authReady = true;
+    this.authRestorePromise = Promise.resolve();
     this.data = this.loadLocalData();
 
     this.initSupabaseClient();
@@ -44,23 +46,29 @@ class AcademicDataManager {
             detectSessionInUrl: true
           }
         });
-        this.restoreSession();
+        this.authReady = false;
+        this.authRestorePromise = this.restoreSession();
       }
     } catch (err) {
+      this.authReady = true;
       console.warn('Supabase client initialization warning:', err);
     }
   }
 
   // استعادة جلسة المسؤول المشفرة إن وجدت
   async restoreSession() {
-    if (!this.client) return;
+    if (!this.client) {
+      this.authReady = true;
+      return;
+    }
     try {
-      const { data: { session } } = await this.client.auth.getSession();
+      const client = this.client;
+      const { data: { session } } = await client.auth.getSession();
       if (session && session.user) {
         await this.verifyAndSetAdmin(session.user);
       }
 
-      this.client.auth.onAuthStateChange(async (event, session) => {
+      client.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
           this.currentUser = null;
           this.adminProfile = null;
@@ -72,6 +80,11 @@ class AcademicDataManager {
       });
     } catch (e) {
       console.warn('Session verification exception:', e);
+    } finally {
+      this.authReady = true;
+      window.dispatchEvent(new CustomEvent('auth-state-changed', {
+        detail: { isLoggedIn: this.isLoggedIn(), restored: true }
+      }));
     }
   }
 
@@ -104,39 +117,18 @@ class AcademicDataManager {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.years && parsed.semesters && parsed.subjects && parsed.materials) {
-          // دمج ذكي وغير متكرر لضمان شمول جميع المقررات الـ 52 المعتمدة وجميع المراحل الأربع
+        if (
+          Array.isArray(parsed.years) &&
+          Array.isArray(parsed.semesters) &&
+          Array.isArray(parsed.subjects) &&
+          Array.isArray(parsed.materials)
+        ) {
           let hasUpdates = false;
 
-          // التأكد من وجود المراحل الأربع
-          if (!parsed.years || parsed.years.length < 4) {
-            parsed.years = INITIAL_ACADEMIC_DATA.years;
-            hasUpdates = true;
-          }
-
-          // التأكد من شمول الفصول الدراسية وتوحيد حقل year_id / academic_year_id
-          if (!parsed.semesters || parsed.semesters.length < 8) {
-            parsed.semesters = INITIAL_ACADEMIC_DATA.semesters;
-            hasUpdates = true;
-          }
-
-          // دمج وتحديث حقول الفصول لضمان وجود year_id دائماً
+          // Keep persisted IDs intact; only normalize the legacy relationship field.
           parsed.semesters.forEach(sem => {
             if (!sem.year_id && sem.academic_year_id) {
               sem.year_id = sem.academic_year_id;
-              hasUpdates = true;
-            }
-          });
-
-          const existingSubIds = new Set(parsed.subjects.map(s => s.id));
-          const existingSubKeys = new Set(parsed.subjects.map(s => `${s.semester_id}::${s.name.trim().toLowerCase()}`));
-
-          INITIAL_ACADEMIC_DATA.subjects.forEach(initialSub => {
-            const key = `${initialSub.semester_id}::${initialSub.name.trim().toLowerCase()}`;
-            if (!existingSubIds.has(initialSub.id) && !existingSubKeys.has(key)) {
-              parsed.subjects.push(initialSub);
-              existingSubIds.add(initialSub.id);
-              existingSubKeys.add(key);
               hasUpdates = true;
             }
           });
@@ -214,7 +206,7 @@ class AcademicDataManager {
   // ====================================================================
 
   getYears() {
-    if (this.data && Array.isArray(this.data.years) && this.data.years.length > 0) {
+    if (this.data && Array.isArray(this.data.years)) {
       return this.data.years.slice().sort((a, b) => a.display_order - b.display_order);
     }
     return (INITIAL_ACADEMIC_DATA.years || []).slice().sort((a, b) => a.display_order - b.display_order);
@@ -224,7 +216,7 @@ class AcademicDataManager {
     if (!yearId) return null;
     const str = String(yearId).trim().toLowerCase();
 
-    const hasLiveYears = this.data && Array.isArray(this.data.years) && this.data.years.length > 0;
+    const hasLiveYears = this.data && Array.isArray(this.data.years);
     const list = hasLiveYears ? this.data.years : (INITIAL_ACADEMIC_DATA.years || []);
     const normalizeId = value => String(value || '').trim().toLowerCase();
 
@@ -262,14 +254,18 @@ class AcademicDataManager {
 
   getSemestersByYear(yearId) {
     const year = this.getYearById(yearId);
-    const resolvedYearId = year ? year.id : yearId;
+    if (!year) return [];
 
-    const list = (this.data && Array.isArray(this.data.semesters) && this.data.semesters.length > 0)
+    const list = (this.data && Array.isArray(this.data.semesters))
       ? this.data.semesters
       : INITIAL_ACADEMIC_DATA.semesters;
 
     return list
-      .filter(s => (s.year_id === resolvedYearId || s.academic_year_id === resolvedYearId))
+      .filter(semester => {
+        const yearRef = semester.year_id || semester.academic_year_id;
+        const linkedYear = this.getYearById(yearRef);
+        return linkedYear ? linkedYear.id === year.id : String(yearRef || '').toLowerCase() === String(year.id).toLowerCase();
+      })
       .sort((a, b) => a.display_order - b.display_order);
   }
 
@@ -277,47 +273,64 @@ class AcademicDataManager {
     if (!semesterId) return null;
     const str = String(semesterId).trim().toLowerCase();
 
-    const list = (this.data && Array.isArray(this.data.semesters) && this.data.semesters.length > 0)
+    const list = (this.data && Array.isArray(this.data.semesters))
       ? this.data.semesters
       : INITIAL_ACADEMIC_DATA.semesters;
 
-    let found = list.find(s => s.id === str);
-    if (!found) {
-      // Check fallback initial data
-      found = INITIAL_ACADEMIC_DATA.semesters.find(s => s.id === str);
-    }
-    return found || null;
+    const exact = list.find(semester => String(semester.id).trim().toLowerCase() === str);
+    if (exact) return exact;
+
+    const legacy = INITIAL_ACADEMIC_DATA.semesters.find(semester => String(semester.id).trim().toLowerCase() === str);
+    if (!legacy) return null;
+
+    const hasLiveSemesters = this.data && Array.isArray(this.data.semesters);
+    if (!hasLiveSemesters) return legacy;
+
+    const legacyYear = INITIAL_ACADEMIC_DATA.years.find(year => year.id === legacy.year_id);
+    if (!legacyYear) return null;
+
+    return list.find(semester => {
+      const linkedYear = this.getYearById(semester.year_id || semester.academic_year_id);
+      return linkedYear &&
+        Number(linkedYear.display_order) === Number(legacyYear.display_order) &&
+        Number(semester.display_order) === Number(legacy.display_order);
+    }) || null;
   }
 
   getSubjectsBySemester(semesterId) {
     if (!semesterId) return [];
-    const list = (this.data && Array.isArray(this.data.subjects) && this.data.subjects.length > 0)
+    const list = this.data && Array.isArray(this.data.subjects)
       ? this.data.subjects
       : INITIAL_ACADEMIC_DATA.subjects;
+    const targetSemester = this.getSemesterById(semesterId);
+    const targetYear = targetSemester
+      ? this.getYearById(targetSemester.year_id || targetSemester.academic_year_id)
+      : null;
 
-    const filtered = list.filter(s => s.semester_id === semesterId);
-    if (filtered.length > 0) {
-      return filtered.slice().sort((a, b) => a.display_order - b.display_order);
-    }
-    // Fallback to initial academic data if empty in current state
-    return (INITIAL_ACADEMIC_DATA.subjects || [])
-      .filter(s => s.semester_id === semesterId)
-      .sort((a, b) => a.display_order - b.display_order);
+    const filtered = list.filter(subject => {
+      const subjectSemesterRef = subject.semester_id || subject.semesterId;
+      if (String(subjectSemesterRef || '').trim().toLowerCase() === String(semesterId).trim().toLowerCase()) return true;
+
+      const subjectSemester = this.getSemesterById(subjectSemesterRef);
+      if (!subjectSemester || !targetSemester || !targetYear) return false;
+      const subjectYear = this.getYearById(subjectSemester.year_id || subjectSemester.academic_year_id);
+      return Boolean(subjectYear) &&
+        subjectYear.id === targetYear.id &&
+        Number(subjectSemester.display_order) === Number(targetSemester.display_order);
+    });
+
+    return filtered.slice().sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
   }
 
   getSubjectById(subjectId) {
     if (!subjectId) return null;
     const str = String(subjectId).trim().toLowerCase();
 
-    const list = (this.data && Array.isArray(this.data.subjects) && this.data.subjects.length > 0)
+    const list = this.data && Array.isArray(this.data.subjects)
       ? this.data.subjects
       : INITIAL_ACADEMIC_DATA.subjects;
 
-    let found = list.find(s => String(s.id).toLowerCase() === str);
-    if (!found && INITIAL_ACADEMIC_DATA.subjects) {
-      found = INITIAL_ACADEMIC_DATA.subjects.find(s => String(s.id).toLowerCase() === str);
-    }
-    return found || null;
+    return list.find(subject => String(subject.id).trim().toLowerCase() === str) || null;
   }
 
   getMaterialsBySubject(subjectId, category = null) {
@@ -327,12 +340,14 @@ class AcademicDataManager {
       : (INITIAL_ACADEMIC_DATA.materials || []);
 
     return list
-      .filter(m => m.subject_id === subjectId && (!category || m.category === category))
+      .filter(material => String(material.subject_id).trim().toLowerCase() === String(subjectId).trim().toLowerCase() && (!category || material.category === category))
       .sort((a, b) => (a.lecture_number || 999) - (b.lecture_number || 999));
   }
 
   getMaterialById(materialId) {
-    return this.data.materials.find(m => m.id === materialId);
+    if (materialId == null) return null;
+    const requestedId = String(materialId).trim().toLowerCase();
+    return this.data.materials.find(material => String(material.id).trim().toLowerCase() === requestedId) || null;
   }
 
   search(query) {

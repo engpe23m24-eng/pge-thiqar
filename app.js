@@ -66,6 +66,12 @@ const App = {
     window.addEventListener('academic-data-updated', () => {
       this.renderCurrentView();
     });
+
+    // Recheck the current route after Supabase restores or changes an admin session.
+    window.addEventListener('auth-state-changed', () => {
+      this.updateAdminUIState();
+      if (this.currentRoute === 'admin') this.renderCurrentView();
+    });
   },
 
   refreshIcons() {
@@ -152,7 +158,7 @@ const App = {
     const directYear = window.academicDB && window.academicDB.getYearById ? window.academicDB.getYearById(route) : null;
 
     if (directYear && route !== 'home') {
-      this.renderYearView(mainContainer, directYear.id, this.routeParams.p1);
+      this.renderYearView(mainContainer, directYear.id, this.getDirectYearSemesterRouteParam());
       this.updateNavActiveState();
       this.refreshIcons();
       return;
@@ -167,7 +173,7 @@ const App = {
       case 'stage':
       case 'years':
       case 'stages':
-        this.renderYearView(mainContainer, this.routeParams.p1, this.routeParams.p2);
+        this.renderYearView(mainContainer, this.routeParams.p1, this.getSemesterRouteParam());
         break;
       case 'subject':
         this.renderSubjectView(mainContainer, this.routeParams.p1, this.routeParams.p2);
@@ -195,6 +201,18 @@ const App = {
         break;
       case 'admin':
         if (!window.academicDB.isLoggedIn()) {
+          if (window.academicDB.authReady === false) {
+            mainContainer.innerHTML = `
+              <section class="max-w-xl mx-auto my-20 p-8 text-center glass-card rounded-3xl border border-slate-200 dark:border-slate-800" role="status" aria-live="polite">
+                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 flex items-center justify-center mx-auto mb-4">
+                  <i data-lucide="loader-circle" class="w-6 h-6 animate-spin"></i>
+                </div>
+                <p class="font-bold text-slate-800 dark:text-slate-200">جارٍ التحقق من جلسة الإدارة...</p>
+              </section>
+            `;
+            this.refreshIcons();
+            return;
+          }
           this.showToast('عذراً، الوصول إلى لوحة الإدارة يتطلب تسجيل دخول كمسؤول معتمد.', 'warning');
           this.navigateTo('home');
           this.openAdminLoginModal();
@@ -214,7 +232,7 @@ const App = {
   // تحديث حالة الروابط النشطة في شريط التنقل
   updateNavActiveState() {
     let currentYear = null;
-    if (this.currentRoute === 'year') {
+    if (['year', 'stage', 'years', 'stages'].includes(this.currentRoute)) {
       currentYear = window.academicDB.getYearById(this.routeParams.p1);
     } else if (this.currentRoute === 'subject') {
       const subject = window.academicDB.getSubjectById(this.routeParams.p1);
@@ -472,6 +490,54 @@ const App = {
   // ====================================================================
   // 2. عرض صفحة المرحلة والفصل الدراسي (Year & Semester View)
   // ====================================================================
+  getSemesterRouteParam() {
+    const first = String(this.routeParams.p2 || '').toLowerCase();
+    if (['semester', 'semesters', 'course', 'term'].includes(first)) {
+      return this.routeParams.p3;
+    }
+    return this.routeParams.p2;
+  },
+
+  getDirectYearSemesterRouteParam() {
+    const first = String(this.routeParams.p1 || '').toLowerCase();
+    if (['semester', 'semesters', 'course', 'term'].includes(first)) {
+      return this.routeParams.p2;
+    }
+    return this.routeParams.p1;
+  },
+
+  resolveSemesterForYear(year, semesterRef, semesters) {
+    if (!semesterRef) return semesters[0] || null;
+    const reference = String(semesterRef).trim().toLowerCase();
+    const exact = semesters.find(semester => String(semester.id).trim().toLowerCase() === reference);
+    if (exact) return exact;
+
+    const explicitId = reference.match(/^sem[-_](\d+)[-_](\d+)$/);
+    if (explicitId) {
+      if (Number(explicitId[1]) !== Number(year.display_order)) return null;
+      return semesters.find(semester => Number(semester.display_order) === Number(explicitId[2])) || null;
+    }
+
+    const aliases = {
+      '1': 1, 'first': 1, 'first-semester': 1, 'first-course': 1,
+      'semester-1': 1, 'sem-1': 1, 'course-1': 1, 'term-1': 1,
+      'الأول': 1, 'الاول': 1, 'الكورس-الأول': 1, 'الكورس-الاول': 1, 'الفصل-الأول': 1, 'الفصل-الاول': 1,
+      '2': 2, 'second': 2, 'second-semester': 2, 'second-course': 2,
+      'semester-2': 2, 'sem-2': 2, 'course-2': 2, 'term-2': 2,
+      'الثاني': 2, 'الكورس-الثاني': 2, 'الفصل-الثاني': 2
+    };
+    let order = aliases[reference];
+    if (!order) {
+      const prefixedOrder = reference.match(/^(?:semester|sem|course|term)[-_ ]?([12])$/);
+      const arabicOrder = reference.match(/^(?:الكورس|الفصل)(?:[-_ ]?الدراسي)?[-_ ]?(الأول|الاول|الثاني|[12])$/);
+      if (prefixedOrder) order = Number(prefixedOrder[1]);
+      else if (arabicOrder) order = aliases[arabicOrder[1]] || Number(arabicOrder[1]);
+    }
+    return order
+      ? semesters.find(semester => Number(semester.display_order) === order) || null
+      : null;
+  },
+
   renderYearView(container, yearId, selectedSemId = null) {
     const year = window.academicDB.getYearById(yearId);
     if (!year) {
@@ -480,10 +546,22 @@ const App = {
     }
 
     const semesters = window.academicDB.getSemestersByYear(year.id);
-    // إذا لم يتم تحديد فصل، نحدد الفصل الأول تلقائياً
-    const activeSem = selectedSemId 
-      ? (semesters.find(s => s.id === selectedSemId) || semesters[0]) 
-      : semesters[0];
+    if (semesters.length === 0) {
+      container.innerHTML = `
+        <section class="max-w-2xl mx-auto my-16 p-8 text-center glass-card rounded-3xl border border-slate-200 dark:border-slate-800">
+          <h1 class="text-xl font-black text-slate-900 dark:text-white">${year.name_ar}</h1>
+          <p class="mt-3 text-sm text-slate-600 dark:text-slate-400">لا توجد فصول دراسية مرتبطة بهذه المرحلة حالياً.</p>
+          <button type="button" onclick="App.navigateTo('home')" class="mt-5 px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">العودة إلى المراحل</button>
+        </section>
+      `;
+      return;
+    }
+
+    const activeSem = this.resolveSemesterForYear(year, selectedSemId, semesters);
+    if (!activeSem) {
+      this.renderNotFound(container, 'الكورس الدراسي المطلوب غير موجود');
+      return;
+    }
 
     const subjects = activeSem ? window.academicDB.getSubjectsBySemester(activeSem.id) : [];
 
