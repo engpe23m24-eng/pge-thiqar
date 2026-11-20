@@ -764,7 +764,7 @@ const INITIAL_ACADEMIC_DATA = {
 
 // فئات المواد الدراسية داخل صفحة المادة
 const MATERIAL_CATEGORIES = [
-  { id: "lectures", label_ar: "المحاضرات", label_en: "Lectures", icon: "book-open", hint: "المحاضرات النظرية والعلمية المرتبة تسلسلياً" },
+  { id: "lectures", label_ar: "YouTube Videos", label_en: "YouTube Videos", icon: "youtube", hint: "المحاضرات والشروحات المرئية على YouTube" },
   { id: "booklets", label_ar: "الملازم", label_en: "Study Booklets", icon: "file-text", hint: "الملازم المعتمدة والشروحات التلخيصية" },
   { id: "assignments", label_ar: "الواجبات", label_en: "Assignments", icon: "clipboard-list", hint: "الواجبات الهندسية ومشاريع التدريب" },
   { id: "exams", label_ar: "أسئلة الامتحانات", label_en: "Exam Questions", icon: "help-circle", hint: "نماذج الامتحانات الشهرية والنهائية السابقة" },
