@@ -335,7 +335,7 @@
        MODAL 3: ADMIN LOGIN MODAL
   ==================================================================== -->
   <div id="admin-login-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
+    <div class="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
       
       <div class="text-center mb-6">
         <div class="w-12 h-12 rounded-2xl bg-blue-900 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-lg">
@@ -393,6 +393,24 @@
           </button>
         </div>
       </form>
+
+      <details id="supabase-bootstrap-panel" class="mt-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+        <summary class="cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-200">إعداد اتصال Supabase لأول مرة</summary>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+          أدخل Project URL و anon/public key من إعدادات مشروعك. تُحفظ هذه القيم في هذا المتصفح فقط. لا تستخدم service_role key هنا.
+        </p>
+        <form onsubmit="App.saveSupabaseBootstrapSettings(event)" class="space-y-3 mt-3">
+          <div>
+            <label for="supabase-bootstrap-url" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Project URL</label>
+            <input id="supabase-bootstrap-url" type="url" required placeholder="https://your-project.supabase.co" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono">
+          </div>
+          <div>
+            <label for="supabase-bootstrap-anon-key" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">anon / public key</label>
+            <input id="supabase-bootstrap-anon-key" type="password" required autocomplete="off" placeholder="ألصق المفتاح العام للمشروع" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono">
+          </div>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs">حفظ إعداد الاتصال بهذا المتصفح</button>
+        </form>
+      </details>
     </div>
   </div>
 
