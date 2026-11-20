@@ -106,11 +106,27 @@ const App = {
     if (!mainContainer) return;
 
     // إخفاء كل المشاهد ثم عرض المشهد المطلوب
-    switch (this.currentRoute) {
+    const route = String(this.currentRoute || 'home').toLowerCase();
+
+    // Check if route matches direct year identifier (e.g. #/1, #/year-1, #/stage-1)
+    const directYear = window.academicDB && window.academicDB.getYearById ? window.academicDB.getYearById(route) : null;
+
+    if (directYear && route !== 'home') {
+      this.renderYearView(mainContainer, directYear.id, this.routeParams.p1);
+      this.updateNavActiveState();
+      this.refreshIcons();
+      return;
+    }
+
+    switch (route) {
       case 'home':
+      case '':
         this.renderHomeView(mainContainer);
         break;
       case 'year':
+      case 'stage':
+      case 'years':
+      case 'stages':
         this.renderYearView(mainContainer, this.routeParams.p1, this.routeParams.p2);
         break;
       case 'subject':
@@ -273,9 +289,10 @@ const App = {
             });
 
             return `
-              <div 
-                onclick="App.navigateTo('year/${year.id}')"
-                class="stage-card glass-card rounded-2xl p-6 cursor-pointer border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 group flex flex-col justify-between"
+              <a 
+                href="#/year/${year.id}"
+                onclick="App.navigateTo('year/${year.id}'); return false;"
+                class="stage-card glass-card rounded-2xl p-6 cursor-pointer border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 group flex flex-col justify-between block no-underline transition-all"
               >
                 <div>
                   <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-900 via-blue-800 to-amber-600 flex items-center justify-center text-white mb-5 shadow-lg group-hover:scale-110 transition-transform">
@@ -310,7 +327,7 @@ const App = {
                     <span class="w-2 h-2 rounded-full bg-blue-600"></span>
                   </div>
                 </div>
-              </div>
+              </a>
             `;
           }).join('')}
         </div>
@@ -517,9 +534,10 @@ const App = {
               const lecturesCount = materials.filter(m => m.category === 'lectures').length;
 
               return `
-                <div 
-                  onclick="App.navigateTo('subject/${sub.id}')"
-                  class="academic-card glass-card rounded-2xl p-6 cursor-pointer border border-slate-200 dark:border-slate-800 flex flex-col justify-between group"
+                <a 
+                  href="#/subject/${sub.id}"
+                  onclick="App.navigateTo('subject/${sub.id}'); return false;"
+                  class="academic-card glass-card rounded-2xl p-6 cursor-pointer border border-slate-200 dark:border-slate-800 flex flex-col justify-between group block no-underline transition-all"
                 >
                   <div>
                     <div class="flex items-start justify-between gap-3 mb-4">
@@ -563,7 +581,7 @@ const App = {
                       <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                     </span>
                   </div>
-                </div>
+                </a>
               `;
             }).join('')}
           </div>

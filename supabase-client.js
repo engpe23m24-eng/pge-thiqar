@@ -105,8 +105,29 @@ class AcademicDataManager {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.years && parsed.semesters && parsed.subjects && parsed.materials) {
-          // دمج ذكي وغير متكرر لضمان شمول جميع المقررات الـ 52 المعتمدة
+          // دمج ذكي وغير متكرر لضمان شمول جميع المقررات الـ 52 المعتمدة وجميع المراحل الأربع
           let hasUpdates = false;
+
+          // التأكد من وجود المراحل الأربع
+          if (!parsed.years || parsed.years.length < 4) {
+            parsed.years = INITIAL_ACADEMIC_DATA.years;
+            hasUpdates = true;
+          }
+
+          // التأكد من شمول الفصول الدراسية وتوحيد حقل year_id / academic_year_id
+          if (!parsed.semesters || parsed.semesters.length < 8) {
+            parsed.semesters = INITIAL_ACADEMIC_DATA.semesters;
+            hasUpdates = true;
+          }
+
+          // دمج وتحديث حقول الفصول لضمان وجود year_id دائماً
+          parsed.semesters.forEach(sem => {
+            if (!sem.year_id && sem.academic_year_id) {
+              sem.year_id = sem.academic_year_id;
+              hasUpdates = true;
+            }
+          });
+
           const existingSubIds = new Set(parsed.subjects.map(s => s.id));
           const existingSubKeys = new Set(parsed.subjects.map(s => `${s.semester_id}::${s.name.trim().toLowerCase()}`));
 
@@ -175,35 +196,138 @@ class AcademicDataManager {
   // ====================================================================
 
   getYears() {
-    return this.data.years.slice().sort((a, b) => a.display_order - b.display_order);
+    if (this.data && Array.isArray(this.data.years) && this.data.years.length > 0) {
+      return this.data.years.slice().sort((a, b) => a.display_order - b.display_order);
+    }
+    return (INITIAL_ACADEMIC_DATA.years || []).slice().sort((a, b) => a.display_order - b.display_order);
   }
 
   getYearById(yearId) {
-    return this.data.years.find(y => y.id === yearId);
+    if (!yearId) return null;
+    const str = String(yearId).trim().toLowerCase();
+
+    // Mapping dictionary for numeric, string, Arabic, and slug formats
+    const yearAliasMap = {
+      '1': 'year-1',
+      'year-1': 'year-1',
+      'year1': 'year-1',
+      'stage-1': 'year-1',
+      'stage1': 'year-1',
+      'first': 'year-1',
+      'first-year': 'year-1',
+      '2': 'year-2',
+      'year-2': 'year-2',
+      'year2': 'year-2',
+      'stage-2': 'year-2',
+      'stage2': 'year-2',
+      'second': 'year-2',
+      'second-year': 'year-2',
+      '3': 'year-3',
+      'year-3': 'year-3',
+      'year3': 'year-3',
+      'stage-3': 'year-3',
+      'stage3': 'year-3',
+      'third': 'year-3',
+      'third-year': 'year-3',
+      '4': 'year-4',
+      'year-4': 'year-4',
+      'year4': 'year-4',
+      'stage-4': 'year-4',
+      'stage4': 'year-4',
+      'fourth': 'year-4',
+      'fourth-year': 'year-4'
+    };
+
+    const targetId = yearAliasMap[str] || str;
+
+    // Search in current data
+    const list = (this.data && Array.isArray(this.data.years) && this.data.years.length > 0)
+      ? this.data.years
+      : INITIAL_ACADEMIC_DATA.years;
+
+    let found = list.find(y => y.id === targetId || y.id === str);
+    if (!found) {
+      found = list.find(y => {
+        const yId = String(y.id || '').toLowerCase();
+        const yEn = String(y.name_en || '').toLowerCase();
+        return yId === targetId || yEn.includes(str) || (str.includes('1') && yId === 'year-1') || (str.includes('2') && yId === 'year-2') || (str.includes('3') && yId === 'year-3') || (str.includes('4') && yId === 'year-4');
+      });
+    }
+
+    // Safety fallback to INITIAL_ACADEMIC_DATA
+    if (!found && INITIAL_ACADEMIC_DATA.years) {
+      found = INITIAL_ACADEMIC_DATA.years.find(y => y.id === targetId || y.id === str);
+    }
+    return found || null;
   }
 
   getSemestersByYear(yearId) {
-    return this.data.semesters
-      .filter(s => s.academic_year_id === yearId)
+    const year = this.getYearById(yearId);
+    const resolvedYearId = year ? year.id : yearId;
+
+    const list = (this.data && Array.isArray(this.data.semesters) && this.data.semesters.length > 0)
+      ? this.data.semesters
+      : INITIAL_ACADEMIC_DATA.semesters;
+
+    return list
+      .filter(s => (s.year_id === resolvedYearId || s.academic_year_id === resolvedYearId))
       .sort((a, b) => a.display_order - b.display_order);
   }
 
   getSemesterById(semesterId) {
-    return this.data.semesters.find(s => s.id === semesterId);
+    if (!semesterId) return null;
+    const str = String(semesterId).trim().toLowerCase();
+
+    const list = (this.data && Array.isArray(this.data.semesters) && this.data.semesters.length > 0)
+      ? this.data.semesters
+      : INITIAL_ACADEMIC_DATA.semesters;
+
+    let found = list.find(s => s.id === str);
+    if (!found) {
+      // Check fallback initial data
+      found = INITIAL_ACADEMIC_DATA.semesters.find(s => s.id === str);
+    }
+    return found || null;
   }
 
   getSubjectsBySemester(semesterId) {
-    return this.data.subjects
+    if (!semesterId) return [];
+    const list = (this.data && Array.isArray(this.data.subjects) && this.data.subjects.length > 0)
+      ? this.data.subjects
+      : INITIAL_ACADEMIC_DATA.subjects;
+
+    const filtered = list.filter(s => s.semester_id === semesterId);
+    if (filtered.length > 0) {
+      return filtered.slice().sort((a, b) => a.display_order - b.display_order);
+    }
+    // Fallback to initial academic data if empty in current state
+    return (INITIAL_ACADEMIC_DATA.subjects || [])
       .filter(s => s.semester_id === semesterId)
       .sort((a, b) => a.display_order - b.display_order);
   }
 
   getSubjectById(subjectId) {
-    return this.data.subjects.find(s => s.id === subjectId);
+    if (!subjectId) return null;
+    const str = String(subjectId).trim().toLowerCase();
+
+    const list = (this.data && Array.isArray(this.data.subjects) && this.data.subjects.length > 0)
+      ? this.data.subjects
+      : INITIAL_ACADEMIC_DATA.subjects;
+
+    let found = list.find(s => String(s.id).toLowerCase() === str);
+    if (!found && INITIAL_ACADEMIC_DATA.subjects) {
+      found = INITIAL_ACADEMIC_DATA.subjects.find(s => String(s.id).toLowerCase() === str);
+    }
+    return found || null;
   }
 
   getMaterialsBySubject(subjectId, category = null) {
-    return this.data.materials
+    if (!subjectId) return [];
+    const list = (this.data && Array.isArray(this.data.materials))
+      ? this.data.materials
+      : (INITIAL_ACADEMIC_DATA.materials || []);
+
+    return list
       .filter(m => m.subject_id === subjectId && (!category || m.category === category))
       .sort((a, b) => (a.lecture_number || 999) - (b.lecture_number || 999));
   }
