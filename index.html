@@ -30,6 +30,8 @@
     }
   </script>
 
+  <!-- Supabase JS Client v2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- QRCode.js -->
@@ -345,18 +347,18 @@
 
       <form onsubmit="App.handleAdminLoginSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اسم المستخدم</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني للمسؤول (Admin Email)</label>
           <input 
-            type="text" 
-            id="admin-username-input" 
+            type="email" 
+            id="admin-email-input" 
             required 
-            placeholder="اسم المستخدم" 
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            placeholder="admin@pge-thiqar.edu.iq" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
           >
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور المشفرة</label>
           <input 
             type="password" 
             id="admin-password-input" 
@@ -366,13 +368,21 @@
           >
         </div>
 
+        <div class="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 text-[11px] border border-blue-200/80 dark:border-blue-900 flex items-start gap-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i>
+          <div>
+            <p class="font-bold">المصادقة الآمنة عبر Supabase Auth (RBAC):</p>
+            <p class="text-slate-500 dark:text-slate-400 mt-0.5">الدخول مقتصر على حسابات المسؤولين المسجلين في جدول الصلاحيات فقط.</p>
+          </div>
+        </div>
 
         <div class="flex items-center gap-3 pt-2">
           <button 
             type="submit" 
+            id="admin-login-submit-btn"
             class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm shadow-md transition-all active:scale-95"
           >
-            تسجيل الدخول
+            تسجيل الدخول الآمن
           </button>
           <button 
             type="button" 
@@ -796,8 +806,8 @@
   </script>
 
   <!-- Scripts -->
-  <script src="data.js?v=4.0"></script>
-  <script src="supabase-client.js?v=4.0"></script>
-  <script src="app.js?v=4.0"></script>
+  <script src="data.js?v=5.0"></script>
+  <script src="supabase-client.js?v=5.0"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 </html>

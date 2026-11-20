@@ -1,10 +1,12 @@
 /**
- * Supabase Client & Local Persistence Adapter
- * جامعة ذي قار - كلية الهندسة - قسم هندسة النفط والغاز
+-- ====================================================================
+-- جامعة ذي قار - كلية الهندسة - قسم هندسة النفط والغاز
+-- University of Thi-Qar - Department of Petroleum and Gas Engineering
+-- Secure Supabase Client & Role-Based Access Control (RBAC) Manager
+-- ====================================================================
  */
 
 const SupabaseConfig = {
-  // يتم قراءة الإعدادات من LocalStorage أو المتغيرات
   getUrl: () => localStorage.getItem('thiqar_supabase_url') || '',
   getKey: () => localStorage.getItem('thiqar_supabase_anon_key') || '',
   isConnected: () => Boolean(localStorage.getItem('thiqar_supabase_url') && localStorage.getItem('thiqar_supabase_anon_key')),
@@ -20,22 +22,90 @@ const SupabaseConfig = {
   }
 };
 
-// فئة إدارة البيانات الموحدة (تدعم Supabase والتخزين المحلي المتقدم IndexedDB / LocalStorage)
 class AcademicDataManager {
   constructor() {
-    this.storageKey = 'thiqar_pge_academic_data_v3';
-    this.adminSessionKey = 'thiqar_pge_admin_session_v3';
+    this.storageKey = 'thiqar_pge_academic_data_v4';
+    this.client = null;
+    this.currentUser = null;
+    this.adminProfile = null;
     this.data = this.loadLocalData();
+
+    this.initSupabaseClient();
   }
 
+  // تهيئة عميل Supabase الرسمي عبر CDN
+  initSupabaseClient() {
+    try {
+      if (typeof window !== 'undefined' && window.supabase && SupabaseConfig.isConnected()) {
+        this.client = window.supabase.createClient(SupabaseConfig.getUrl(), SupabaseConfig.getKey(), {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        });
+        this.restoreSession();
+      }
+    } catch (err) {
+      console.warn('Supabase client initialization warning:', err);
+    }
+  }
+
+  // استعادة جلسة المسؤول المشفرة إن وجدت
+  async restoreSession() {
+    if (!this.client) return;
+    try {
+      const { data: { session } } = await this.client.auth.getSession();
+      if (session && session.user) {
+        await this.verifyAndSetAdmin(session.user);
+      }
+
+      this.client.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          this.currentUser = null;
+          this.adminProfile = null;
+          window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { isLoggedIn: false } }));
+        } else if (event === 'SIGNED_IN' && session.user) {
+          await this.verifyAndSetAdmin(session.user);
+          window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { isLoggedIn: this.isLoggedIn() } }));
+        }
+      });
+    } catch (e) {
+      console.warn('Session verification exception:', e);
+    }
+  }
+
+  // التحقق من جدول المسؤولين administrators عبر RLS
+  async verifyAndSetAdmin(user) {
+    if (!this.client || !user) return;
+    try {
+      const { data: adminRecord, error } = await this.client
+        .from('administrators')
+        .select('user_id, email, full_name, role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!error && adminRecord && ['super_admin', 'admin', 'editor'].includes(adminRecord.role)) {
+        this.currentUser = user;
+        this.adminProfile = adminRecord;
+      } else {
+        this.currentUser = null;
+        this.adminProfile = null;
+      }
+    } catch (e) {
+      this.currentUser = null;
+      this.adminProfile = null;
+    }
+  }
+
+  // تحميل البيانات الأولية المحفوظة محلياً لضمان سرعة التصفح لعامة الطلبة
   loadLocalData() {
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // التحقق من اكتمال الهيكل
         if (parsed.years && parsed.semesters && parsed.subjects && parsed.materials) {
-          // دمج ذكي وغير متكرر (Idempotent Merge): ضمان توفر مقررات المرحلة الثالثة والرابعة مع الحفاظ التام على المقررات والملفات السابقة
+          // دمج ذكي وغير متكرر لضمان شمول جميع المقررات الـ 52 المعتمدة
           let hasUpdates = false;
           const existingSubIds = new Set(parsed.subjects.map(s => s.id));
           const existingSubKeys = new Set(parsed.subjects.map(s => `${s.semester_id}::${s.name.trim().toLowerCase()}`));
@@ -50,18 +120,6 @@ class AcademicDataManager {
             }
           });
 
-          // تحديث بيانات المراحل والفصول إن لزم الأمر
-          INITIAL_ACADEMIC_DATA.years.forEach(initYear => {
-            const yIndex = parsed.years.findIndex(y => y.id === initYear.id);
-            if (yIndex === -1) {
-              parsed.years.push(initYear);
-              hasUpdates = true;
-            } else if (parsed.years[yIndex].name_en !== initYear.name_en) {
-              parsed.years[yIndex].name_en = initYear.name_en;
-              hasUpdates = true;
-            }
-          });
-
           if (hasUpdates) {
             this.saveLocalData(parsed);
           }
@@ -71,7 +129,6 @@ class AcademicDataManager {
     } catch (e) {
       console.warn('Could not parse local data, initializing default dataset:', e);
     }
-    // استخدام البيانات الأولية الدقيقة المعتمدة
     this.saveLocalData(INITIAL_ACADEMIC_DATA);
     return JSON.parse(JSON.stringify(INITIAL_ACADEMIC_DATA));
   }
@@ -80,26 +137,54 @@ class AcademicDataManager {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(data));
       this.data = data;
-      // إطلاق حدث تحديث للبيانات
       window.dispatchEvent(new CustomEvent('academic-data-updated', { detail: data }));
     } catch (e) {
       console.error('Failed to save to localStorage:', e);
     }
   }
 
-  // استرجاع المراحل الدراسية
+  // مزامنة البيانات من قاعدة بيانات Supabase (قراءة عامة للطلبة والزوار)
+  async syncFromSupabase() {
+    if (!this.client) return { success: false, message: 'Supabase is not connected' };
+    try {
+      const [yearsRes, semRes, subRes, matRes] = await Promise.all([
+        this.client.from('academic_years').select('*').order('display_order'),
+        this.client.from('semesters').select('*').order('display_order'),
+        this.client.from('subjects').select('*').order('display_order'),
+        this.client.from('materials').select('*').order('created_at', { ascending: false })
+      ]);
+
+      if (yearsRes.data && semRes.data && subRes.data) {
+        const syncedData = {
+          years: yearsRes.data.length ? yearsRes.data : this.data.years,
+          semesters: semRes.data.length ? semRes.data : this.data.semesters,
+          subjects: subRes.data.length ? subRes.data : this.data.subjects,
+          materials: matRes.data || this.data.materials
+        };
+        this.saveLocalData(syncedData);
+        return { success: true, count: subRes.data.length };
+      }
+    } catch (e) {
+      console.warn('Supabase sync error:', e);
+    }
+    return { success: false };
+  }
+
+  // ====================================================================
+  // دوال القراءة العامة (Public Read - متاحة للطلبة والزوار بدون تسجيل)
+  // ====================================================================
+
   getYears() {
-    return this.data.years.sort((a, b) => a.display_order - b.display_order);
+    return this.data.years.slice().sort((a, b) => a.display_order - b.display_order);
   }
 
   getYearById(yearId) {
     return this.data.years.find(y => y.id === yearId);
   }
 
-  // استرجاع الفصول الدراسية لمرحلة معينة
   getSemestersByYear(yearId) {
     return this.data.semesters
-      .filter(s => s.year_id === yearId)
+      .filter(s => s.academic_year_id === yearId)
       .sort((a, b) => a.display_order - b.display_order);
   }
 
@@ -107,7 +192,6 @@ class AcademicDataManager {
     return this.data.semesters.find(s => s.id === semesterId);
   }
 
-  // استرجاع المواد لفصل معين
   getSubjectsBySemester(semesterId) {
     return this.data.subjects
       .filter(s => s.semester_id === semesterId)
@@ -118,182 +202,28 @@ class AcademicDataManager {
     return this.data.subjects.find(s => s.id === subjectId);
   }
 
-  // استرجاع المواد والمحاضرات لمادة معينة
   getMaterialsBySubject(subjectId, category = null) {
-    let items = this.data.materials.filter(m => m.subject_id === subjectId);
-    if (category) {
-      items = items.filter(m => m.category === category);
-    }
-    // في المحاضرات، الترتيب حسب رقم المحاضرة أولاً ثم تاريخ الإضافة
-    return items.sort((a, b) => {
-      if (a.lecture_number && b.lecture_number) {
-        return a.lecture_number - b.lecture_number;
-      }
-      return new Date(b.created_at || b.upload_date) - new Date(a.created_at || a.upload_date);
-    });
+    return this.data.materials
+      .filter(m => m.subject_id === subjectId && (!category || m.category === category))
+      .sort((a, b) => (a.lecture_number || 999) - (b.lecture_number || 999));
   }
 
   getMaterialById(materialId) {
     return this.data.materials.find(m => m.id === materialId);
   }
 
-  // ==========================================
-  // عمليات الإدارة (CRUD) للمسؤولين
-  // ==========================================
-
-  // 1. إضافة مادة دراسية جديدة
-  addSubject(subjectData) {
-    const newSubject = {
-      id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      semester_id: subjectData.semester_id,
-      name: subjectData.name.trim(),
-      name_en: subjectData.name_en ? subjectData.name_en.trim() : subjectData.name.trim(),
-      name_ar: subjectData.name_ar ? subjectData.name_ar.trim() : subjectData.name.trim(),
-      code: subjectData.code ? subjectData.code.trim().toUpperCase() : 'PGE-NEW',
-      description: subjectData.description ? subjectData.description.trim() : '',
-      icon: subjectData.icon || 'book-open',
-      display_order: Number(subjectData.display_order) || (this.getSubjectsBySemester(subjectData.semester_id).length + 1)
-    };
-
-    this.data.subjects.push(newSubject);
-    this.saveLocalData(this.data);
-    return newSubject;
-  }
-
-  // 2. تعديل مادة دراسية
-  updateSubject(subjectId, updatedFields) {
-    const index = this.data.subjects.findIndex(s => s.id === subjectId);
-    if (index === -1) return null;
-
-    this.data.subjects[index] = {
-      ...this.data.subjects[index],
-      ...updatedFields,
-      name: updatedFields.name ? updatedFields.name.trim() : this.data.subjects[index].name
-    };
-
-    this.saveLocalData(this.data);
-    return this.data.subjects[index];
-  }
-
-  // 3. حذف مادة دراسية
-  deleteSubject(subjectId) {
-    // حذف المادة وكافة الملفات والمحاضرات المرتبطة بها
-    this.data.subjects = this.data.subjects.filter(s => s.id !== subjectId);
-    this.data.materials = this.data.materials.filter(m => m.subject_id !== subjectId);
-    this.saveLocalData(this.data);
-    return true;
-  }
-
-  // 4. إضافة مستند / محاضرة جديدة
-  addMaterial(materialData) {
-    const newMaterial = {
-      id: `mat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      subject_id: materialData.subject_id,
-      category: materialData.category || 'lectures',
-      title: materialData.title.trim(),
-      description: materialData.description ? materialData.description.trim() : '',
-      file_path: materialData.file_path || 'sample_docs/geology_lec1_intro.pdf',
-      file_name: materialData.file_name || 'document.pdf',
-      file_size: materialData.file_size || '1.5 MB',
-      file_type: materialData.file_type || 'application/pdf',
-      youtube_url: materialData.youtube_url || null,
-      file_data_url: materialData.file_data_url || null, // دعم المعاينة المباشرة للملفات المرفوعة من الجهاز
-      lecture_number: materialData.lecture_number ? Number(materialData.lecture_number) : null,
-      upload_date: new Date().toISOString().split('T')[0],
-      created_at: new Date().toISOString()
-    };
-
-    this.data.materials.push(newMaterial);
-    this.saveLocalData(this.data);
-    return newMaterial;
-  }
-
-  // 5. تعديل بيانات مستند / محاضرة
-  updateMaterial(materialId, updatedFields) {
-    const index = this.data.materials.findIndex(m => m.id === materialId);
-    if (index === -1) return null;
-
-    this.data.materials[index] = {
-      ...this.data.materials[index],
-      ...updatedFields,
-      updated_at: new Date().toISOString()
-    };
-
-    this.saveLocalData(this.data);
-    return this.data.materials[index];
-  }
-
-  // 6. استبدال ملف المستند بملف جديد
-  replaceMaterialFile(materialId, fileInfo) {
-    const index = this.data.materials.findIndex(m => m.id === materialId);
-    if (index === -1) return null;
-
-    this.data.materials[index].file_name = fileInfo.file_name;
-    this.data.materials[index].file_path = fileInfo.file_path || this.data.materials[index].file_path;
-    this.data.materials[index].file_size = fileInfo.file_size;
-    this.data.materials[index].file_data_url = fileInfo.file_data_url || null;
-    this.data.materials[index].upload_date = new Date().toISOString().split('T')[0];
-    this.data.materials[index].updated_at = new Date().toISOString();
-
-    this.saveLocalData(this.data);
-    return this.data.materials[index];
-  }
-
-  // 7. حذف مستند / محاضرة
-  deleteMaterial(materialId) {
-    this.data.materials = this.data.materials.filter(m => m.id !== materialId);
-    this.saveLocalData(this.data);
-    return true;
-  }
-
-  // استعادة البيانات الأولية الافتراضية
-  resetToDefaultData() {
-    this.saveLocalData(INITIAL_ACADEMIC_DATA);
-    return true;
-  }
-
-  // تصدير البيانات إلى ملف JSON
-  exportData() {
-    return JSON.stringify(this.data, null, 2);
-  }
-
-  // استيراد بيانات من JSON
-  importData(jsonString) {
-    try {
-      const parsed = JSON.parse(jsonString);
-      if (parsed.years && parsed.semesters && parsed.subjects && parsed.materials) {
-        this.saveLocalData(parsed);
-        return true;
-      }
-    } catch (e) {
-      console.error('Invalid import data:', e);
-    }
-    return false;
-  }
-
-  // ==========================================
-  // البحث الشامل في المقررات والمحاضرات
-  // ==========================================
   search(query) {
-    if (!query || query.trim().length === 0) return { subjects: [], materials: [] };
     const q = query.trim().toLowerCase();
+    if (!q) return { subjects: [], materials: [] };
 
-    // البحث في المواد
-    const matchedSubjects = this.data.subjects.filter(s => {
-      const semester = this.getSemesterById(s.semester_id);
-      const year = semester ? this.getYearById(semester.year_id) : null;
-      return (
-        s.name.toLowerCase().includes(q) ||
-        (s.name_ar && s.name_ar.toLowerCase().includes(q)) ||
-        (s.name_en && s.name_en.toLowerCase().includes(q)) ||
-        (s.code && s.code.toLowerCase().includes(q)) ||
-        (s.description && s.description.toLowerCase().includes(q)) ||
-        (semester && semester.name_ar.toLowerCase().includes(q)) ||
-        (year && year.name_ar.toLowerCase().includes(q))
-      );
-    });
+    const matchedSubjects = this.data.subjects.filter(s => 
+      s.name.toLowerCase().includes(q) ||
+      (s.name_ar && s.name_ar.toLowerCase().includes(q)) ||
+      (s.name_en && s.name_en.toLowerCase().includes(q)) ||
+      (s.code && s.code.toLowerCase().includes(q)) ||
+      (s.description && s.description.toLowerCase().includes(q))
+    );
 
-    // البحث في المحاضرات والمستندات
     const matchedMaterials = this.data.materials.filter(m => {
       const subject = this.getSubjectById(m.subject_id);
       return (
@@ -304,43 +234,298 @@ class AcademicDataManager {
       );
     });
 
+    return { subjects: matchedSubjects, materials: matchedMaterials };
+  }
+
+  // ====================================================================
+  // مصادقة المسؤول الآمنة (Secure RBAC Authentication via Supabase Auth)
+  // ====================================================================
+
+  isLoggedIn() {
+    return Boolean(this.currentUser && this.adminProfile && ['super_admin', 'admin', 'editor'].includes(this.adminProfile.role));
+  }
+
+  getAdminInfo() {
+    if (!this.isLoggedIn()) return null;
     return {
-      subjects: matchedSubjects,
-      materials: matchedMaterials
+      email: this.currentUser.email,
+      fullName: this.adminProfile.full_name || 'مسؤول النظام',
+      role: this.adminProfile.role
     };
   }
 
-  // ==========================================
-  // جلسة المسؤول (Admin Authentication)
-  // ==========================================
-  loginAdmin(username, password) {
-    // التحقق من بيانات الدخول (الافتراضية: admin / thiqar2026 أو اتصال Supabase)
-    if ((username.trim() === 'admin' || username.trim() === 'pge_admin') && password === 'thiqar2026') {
-      const session = {
-        authenticated: true,
-        username: username.trim(),
-        role: 'super_admin',
-        loginTime: new Date().toISOString()
+  async loginAdmin(email, password) {
+    if (!email || !password) {
+      return { success: false, message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' };
+    }
+
+    if (!this.client) {
+      return { 
+        success: false, 
+        message: 'قاعدة بيانات Supabase غير متصلة. يرجى إدخال Project URL و Anon Key في إعدادات الربط لتسجيل الدخول بأمان.' 
       };
-      localStorage.setItem(this.adminSessionKey, JSON.stringify(session));
-      return { success: true, session };
     }
-    return { success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
-  }
 
-  isLoggedIn() {
     try {
-      const session = JSON.parse(localStorage.getItem(this.adminSessionKey));
-      return Boolean(session && session.authenticated);
-    } catch (e) {
-      return false;
+      const { data, error } = await this.client.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+
+      if (error) {
+        return { success: false, message: error.message || 'بيانات الدخول غير صحيحة' };
+      }
+
+      if (!data.user) {
+        return { success: false, message: 'تعذر التحقق من هوية المستخدم' };
+      }
+
+      // التحقق الصارم من رتبة المسؤول في جدول administrators المحمي بـ RLS
+      const { data: adminRecord, error: roleError } = await this.client
+        .from('administrators')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (roleError || !adminRecord) {
+        await this.client.auth.signOut();
+        return { 
+          success: false, 
+          message: 'تم التحقق من الحساب ولكن ليس لديك تصريح مسؤول (Administrator). الدخول مخصص لإدارة القسم فقط.' 
+        };
+      }
+
+      this.currentUser = data.user;
+      this.adminProfile = adminRecord;
+
+      return { success: true, user: data.user, profile: adminRecord };
+    } catch (err) {
+      return { success: false, message: 'حدث خطأ أثناء الاتصال: ' + (err.message || err) };
     }
   }
 
-  logoutAdmin() {
-    localStorage.removeItem(this.adminSessionKey);
+  async logoutAdmin() {
+    if (this.client) {
+      try {
+        await this.client.auth.signOut();
+      } catch (e) {
+        console.warn('Sign out warning:', e);
+      }
+    }
+    this.currentUser = null;
+    this.adminProfile = null;
+  }
+
+  // ====================================================================
+  // رفع وتخزين الملفات الآمن (Secure Storage Upload with Validation)
+  // ====================================================================
+
+  async uploadAcademicFile(file, folderPath = 'lectures') {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: رفع الملفات مخصص لمسؤولي القسم المسجلين فقط.');
+    }
+
+    // 1. التحقق من حجم الملف (الحد الأقصى 50 ميغابايت)
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      throw new Error('حجم الملف يتجاوز الحد الأقصى المسموح به (50 ميغابايت)');
+    }
+
+    // 2. التحقق من امتداد الملف ونوعه المعتمد
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg'];
+    const fileExt = (file.name.split('.').pop() || '').toLowerCase();
+    if (!allowedExtensions.includes(fileExt)) {
+      throw new Error(`امتداد الملف (.${fileExt}) غير مسموح به. الامتدادات المدعومة: PDF, Word, PowerPoint, Excel, Images`);
+    }
+
+    // 3. توليد مسار تخزين آمن وفريد يمنع التداخل أو استبدال الملفات غير المصرح
+    const safeRandom = Math.random().toString(36).substring(2, 9);
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `${folderPath}/${Date.now()}-${safeRandom}_${sanitizedFileName}`;
+
+    if (this.client) {
+      const { data, error } = await this.client.storage
+        .from('academic-materials')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw new Error('فشل رفع الملف إلى التخزين السحابي: ' + error.message);
+      }
+
+      const { data: publicData } = this.client.storage
+        .from('academic-materials')
+        .getPublicUrl(storagePath);
+
+      return {
+        file_path: data.path,
+        public_url: publicData.publicUrl,
+        file_name: file.name,
+        file_size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        file_type: file.type || 'application/pdf'
+      };
+    }
+
+    // في حال عدم ربط التخزين السحابي، تخزين بيانات المعاينة محلياً للمسؤول فقط
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve({
+          file_path: storagePath,
+          file_data_url: e.target.result,
+          file_name: file.name,
+          file_size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          file_type: file.type || 'application/pdf'
+        });
+      };
+      reader.onerror = () => reject(new Error('فشل قراءة الملف المحلي'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ====================================================================
+  // العمليات الإدارية المحمية (Protected CRUD - Admin Only)
+  // ====================================================================
+
+  async addSubject(subjectData) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: إضافة المواد الدراسية مقتصرة على المسؤولين فقط.');
+    }
+
+    const newSubject = {
+      id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      semester_id: subjectData.semester_id,
+      name: subjectData.name.trim(),
+      name_en: subjectData.name_en ? subjectData.name_en.trim() : subjectData.name.trim(),
+      name_ar: subjectData.name_ar ? subjectData.name_ar.trim() : subjectData.name.trim(),
+      code: subjectData.code ? subjectData.code.trim().toUpperCase() : 'PGE',
+      description: subjectData.description ? subjectData.description.trim() : '',
+      icon: subjectData.icon || 'book-open',
+      display_order: this.data.subjects.filter(s => s.semester_id === subjectData.semester_id).length + 1,
+      created_at: new Date().toISOString()
+    };
+
+    if (this.client) {
+      const { error } = await this.client.from('subjects').insert(newSubject);
+      if (error) throw new Error('فشل الحفظ في قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.subjects.push(newSubject);
+    this.saveLocalData(this.data);
+    return newSubject;
+  }
+
+  async updateSubject(subjectId, updatedFields) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: تعديل المواد الدراسية مقتصر على المسؤولين فقط.');
+    }
+
+    const index = this.data.subjects.findIndex(s => s.id === subjectId);
+    if (index === -1) return null;
+
+    if (this.client) {
+      const { error } = await this.client.from('subjects').update(updatedFields).eq('id', subjectId);
+      if (error) throw new Error('فشل تحديث قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.subjects[index] = { ...this.data.subjects[index], ...updatedFields };
+    this.saveLocalData(this.data);
+    return this.data.subjects[index];
+  }
+
+  async deleteSubject(subjectId) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: حذف المواد الدراسية مقتصر على المسؤولين فقط.');
+    }
+
+    if (this.client) {
+      const { error } = await this.client.from('subjects').delete().eq('id', subjectId);
+      if (error) throw new Error('فشل الحذف من قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.subjects = this.data.subjects.filter(s => s.id !== subjectId);
+    this.data.materials = this.data.materials.filter(m => m.subject_id !== subjectId);
+    this.saveLocalData(this.data);
+    return true;
+  }
+
+  async addMaterial(materialData) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: رفع المواد وإضافة الفيديوهات مقتصرة على المسؤولين فقط.');
+    }
+
+    const newMaterial = {
+      id: `mat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      subject_id: materialData.subject_id,
+      category: materialData.category || 'lectures',
+      title: materialData.title.trim(),
+      description: materialData.description ? materialData.description.trim() : '',
+      file_path: materialData.file_path || (materialData.youtube_url ? 'youtube' : 'sample_docs/geology_lec1_intro.pdf'),
+      file_name: materialData.file_name || (materialData.youtube_url ? 'YouTube Video' : 'document.pdf'),
+      file_size: materialData.file_size || (materialData.youtube_url ? 'YouTube' : '1.5 MB'),
+      file_type: materialData.file_type || (materialData.youtube_url ? 'video/youtube' : 'application/pdf'),
+      youtube_url: materialData.youtube_url || null,
+      file_data_url: materialData.file_data_url || null,
+      lecture_number: materialData.lecture_number ? Number(materialData.lecture_number) : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (this.client) {
+      // إزالة حقول العرض المحلية المؤقتة قبل الإرسال لـ Supabase
+      const { file_data_url, ...dbPayload } = newMaterial;
+      const { error } = await this.client.from('materials').insert(dbPayload);
+      if (error) throw new Error('فشل الحفظ في قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.materials.unshift(newMaterial);
+    this.saveLocalData(this.data);
+    return newMaterial;
+  }
+
+  async updateMaterial(materialId, updatedFields) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: تعديل المواد التعليمية مقتصر على المسؤولين فقط.');
+    }
+
+    const index = this.data.materials.findIndex(m => m.id === materialId);
+    if (index === -1) return null;
+
+    if (this.client) {
+      const { error } = await this.client.from('materials').update(updatedFields).eq('id', materialId);
+      if (error) throw new Error('فشل التحديث في قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.materials[index] = {
+      ...this.data.materials[index],
+      ...updatedFields,
+      updated_at: new Date().toISOString()
+    };
+    this.saveLocalData(this.data);
+    return this.data.materials[index];
+  }
+
+  async deleteMaterial(materialId) {
+    if (!this.isLoggedIn()) {
+      throw new Error('Unauthorized: حذف المواد التعليمية مقتصر على المسؤولين فقط.');
+    }
+
+    if (this.client) {
+      const { error } = await this.client.from('materials').delete().eq('id', materialId);
+      if (error) throw new Error('فشل الحذف من قاعدة البيانات: ' + error.message);
+    }
+
+    this.data.materials = this.data.materials.filter(m => m.id !== materialId);
+    this.saveLocalData(this.data);
+    return true;
+  }
+
+  exportData() {
+    return JSON.stringify(this.data, null, 2);
   }
 }
 
-// إنشاء نسخة عامة واحدة لخدمة الموقع
+// إنشاء نسخة واحدة وتصديرها للنافذة العامة
 window.academicDB = new AcademicDataManager();

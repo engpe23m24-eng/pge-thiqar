@@ -123,6 +123,12 @@ const App = {
         this.renderContactView(mainContainer);
         break;
       case 'admin':
+        if (!window.academicDB.isLoggedIn()) {
+          this.showToast('عذراً، الوصول إلى لوحة الإدارة يتطلب تسجيل دخول كمسؤول معتمد.', 'warning');
+          this.navigateTo('home');
+          this.openAdminLoginModal();
+          return;
+        }
         this.renderAdminDashboard(mainContainer);
         break;
       default:
@@ -1582,8 +1588,14 @@ const App = {
     });
   },
 
-  handleSubjectFormSubmit(e) {
+  async handleSubjectFormSubmit(e) {
     e.preventDefault();
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، تعديل أو إضافة المواد يتطلب تصريح مسؤول.', 'error');
+      this.closeModal('subject-modal');
+      this.openAdminLoginModal();
+      return;
+    }
     const subId = document.getElementById('subject-id-input').value;
     const semesterId = document.getElementById('subject-semester-select').value;
     const name = document.getElementById('subject-name-input').value;
@@ -1622,7 +1634,12 @@ const App = {
     this.renderCurrentView();
   },
 
-  deleteSubjectPrompt(subjectId) {
+  async deleteSubjectPrompt(subjectId) {
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، حذف المواد يتطلب تصريح مسؤول.', 'error');
+      this.openAdminLoginModal();
+      return;
+    }
     const sub = window.academicDB.getSubjectById(subjectId);
     if (!sub) return;
 
@@ -1771,7 +1788,7 @@ const App = {
     reader.readAsDataURL(file);
   },
 
-  handleUploadFormSubmit(e) {
+  async handleUploadFormSubmit(e) {
     e.preventDefault();
     if (!window.academicDB.isLoggedIn()) {
       this.showToast('عذراً، هذه العملية تتطلب تسجيل دخول كمسؤول النظام.', 'error');
@@ -1785,13 +1802,10 @@ const App = {
     const description = document.getElementById('upload-desc-input').value;
     const lectureNum = document.getElementById('upload-lecture-num-input').value;
     const youtubeUrl = document.getElementById('upload-youtube-url-input')?.value || '';
-    const fileDataUrl = document.getElementById('upload-file-data-url').value;
     const fileInput = document.getElementById('upload-file-input');
 
     const file = fileInput.files[0];
     const isYt = category === 'lectures' && Boolean(youtubeUrl.trim());
-    const fileName = isYt ? 'YouTube Video' : (file ? file.name : 'document.pdf');
-    const fileSize = isYt ? 'YouTube' : (file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '2.0 MB');
 
     if (!title.trim() || !subjectId) {
       this.showToast('يرجى كتابة عنوان واختيار المادة', 'error');
@@ -1803,25 +1817,53 @@ const App = {
       return;
     }
 
-    window.academicDB.addMaterial({
-      subject_id: subjectId,
-      category: category,
-      title: title.trim(),
-      description: description.trim(),
-      youtube_url: youtubeUrl.trim() || null,
-      file_name: fileName,
-      file_size: fileSize,
-      file_data_url: fileDataUrl || null,
-      lecture_number: category === 'lectures' && lectureNum ? Number(lectureNum) : null
-    });
+    let filePath = 'sample_docs/geology_lec1_intro.pdf';
+    let fileName = isYt ? 'YouTube Video' : 'document.pdf';
+    let fileSize = isYt ? 'YouTube' : '1.5 MB';
+    let fileDataUrl = null;
 
-    this.showToast(isYt ? 'تمت إضافة فيديو YouTube بنجاح!' : 'تم رفع المستند الدراسي بنجاح!', 'success');
-    this.closeModal('upload-modal');
-    this.renderCurrentView();
+    if (file) {
+      try {
+        const uploadRes = await window.academicDB.uploadAcademicFile(file, 'lectures');
+        filePath = uploadRes.public_url || uploadRes.file_path;
+        fileName = uploadRes.file_name;
+        fileSize = uploadRes.file_size;
+        fileDataUrl = uploadRes.file_data_url || null;
+      } catch (err) {
+        this.showToast('خطأ أثناء رفع الملف: ' + err.message, 'error');
+        return;
+      }
+    }
+
+    try {
+      await window.academicDB.addMaterial({
+        subject_id: subjectId,
+        category: category,
+        title: title.trim(),
+        description: description.trim(),
+        file_path: filePath,
+        file_name: fileName,
+        file_size: fileSize,
+        file_data_url: fileDataUrl,
+        youtube_url: youtubeUrl.trim() || null,
+        lecture_number: category === 'lectures' && lectureNum ? Number(lectureNum) : null
+      });
+
+      this.showToast(isYt ? 'تمت إضافة فيديو YouTube بنجاح!' : 'تم رفع المستند الدراسي بنجاح!', 'success');
+      this.closeModal('upload-modal');
+      this.renderCurrentView();
+    } catch (err) {
+      this.showToast('فشل إضافة المادة: ' + err.message, 'error');
+    }
   },
 
   // تعديل مستند موجود
-  openEditMaterialModal(materialId) {
+  async openEditMaterialModal(materialId) {
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، تعديل المستندات يتطلب تصريح مسؤول.', 'error');
+      this.openAdminLoginModal();
+      return;
+    }
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) return;
 
@@ -1861,14 +1903,23 @@ const App = {
     input.click();
   },
 
-  deleteMaterialPrompt(materialId, subjectId) {
+  async deleteMaterialPrompt(materialId, subjectId) {
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، حذف المستندات يتطلب تصريح مسؤول.', 'error');
+      this.openAdminLoginModal();
+      return;
+    }
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) return;
 
     if (confirm(`هل أنت متأكد من حذف المستند "${mat.title}"؟`)) {
-      window.academicDB.deleteMaterial(materialId);
-      this.showToast('تم حذف المستند بنجاح', 'success');
-      this.renderCurrentView();
+      try {
+        await window.academicDB.deleteMaterial(materialId);
+        this.showToast('تم حذف المستند بنجاح', 'success');
+        this.renderCurrentView();
+      } catch (err) {
+        this.showToast('فشل حذف المستند: ' + err.message, 'error');
+      }
     }
   },
 
@@ -2015,26 +2066,45 @@ const App = {
     }
   },
 
-  handleAdminLoginSubmit(e) {
+  async handleAdminLoginSubmit(e) {
     e.preventDefault();
-    const user = document.getElementById('admin-username-input').value;
-    const pass = document.getElementById('admin-password-input').value;
+    const emailInput = document.getElementById('admin-email-input');
+    const passInput = document.getElementById('admin-password-input');
+    const submitBtn = document.getElementById('admin-login-submit-btn');
 
-    const res = window.academicDB.loginAdmin(user, pass);
-    if (res.success) {
-      this.showToast('تم تسجيل الدخول بنجاح! مرحباً بالمسؤول.', 'success');
-      this.closeModal('admin-login-modal');
-      this.updateAdminUIState();
-      this.navigateTo('admin');
-    } else {
-      this.showToast(res.message || 'بيانات الدخول غير صحيحة', 'error');
+    const email = emailInput ? emailInput.value : '';
+    const pass = passInput ? passInput.value : '';
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري التحقق من الصلاحيات...';
+    }
+
+    try {
+      const res = await window.academicDB.loginAdmin(email, pass);
+      if (res.success) {
+        const name = (res.profile && res.profile.full_name) || 'المسؤول';
+        this.showToast(`تم تسجيل الدخول بنجاح! مرحباً ${name}.`, 'success');
+        this.closeModal('admin-login-modal');
+        this.updateAdminUIState();
+        this.navigateTo('admin');
+      } else {
+        this.showToast(res.message || 'بيانات الدخول غير صحيحة أو ليس لديك صلاحية مسؤول', 'error');
+      }
+    } catch (err) {
+      this.showToast('حدث خطأ أثناء الاتصال: ' + (err.message || err), 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تسجيل الدخول الآمن';
+      }
     }
   },
 
-  logoutAdmin() {
-    window.academicDB.logoutAdmin();
+  async logoutAdmin() {
+    await window.academicDB.logoutAdmin();
     this.updateAdminUIState();
-    this.showToast('تم تسجيل الخروج بنجاح', 'info');
+    this.showToast('تم تسجيل الخروج وإلغاء الجلسة بنجاح', 'info');
     this.navigateTo('home');
   },
 
@@ -2077,15 +2147,25 @@ const App = {
 
     if (url && key) {
       SupabaseConfig.saveCredentials(url, key);
-      this.showToast('تم حفظ بيانات الاتصال بـ Supabase بنجاح', 'success');
-      this.renderCurrentView();
+      window.academicDB.initSupabaseClient();
+      this.showToast('تم حفظ بيانات الاتصال بـ Supabase وجاري تهيئة العميل...', 'success');
+      window.academicDB.syncFromSupabase().then(res => {
+        if (res.success) {
+          this.showToast(`تمت مزامنة ${res.count} مادة من قاعدة بيانات Supabase!`, 'success');
+        }
+        this.renderCurrentView();
+      });
     }
   },
 
   clearSupabaseSettings() {
     SupabaseConfig.clearCredentials();
-    this.showToast('تم إلغاء الربط والعودة للتخزين المحلي المستقل', 'info');
-    this.renderCurrentView();
+    window.academicDB.client = null;
+    window.academicDB.currentUser = null;
+    window.academicDB.adminProfile = null;
+    this.updateAdminUIState();
+    this.showToast('تم إلغاء الربط والعودة للوضع المحلي للقراءة فقط', 'info');
+    this.navigateTo('home');
   },
 
   exportAcademicJson() {
