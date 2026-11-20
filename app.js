@@ -78,6 +78,8 @@ const App = {
   // نظام التوجيه والتنقل (Routing System)
   // ==========================================
   handleRouting() {
+    const previousRoute = this.currentRoute;
+    const previousMaterialId = this.routeParams.p1;
     const hash = window.location.hash || '#/';
     const routeText = hash.replace(/^#/, '').split('?')[0].replace(/^\/+|\/+$/g, '');
     const parts = routeText ? routeText.split('/').map(part => {
@@ -96,6 +98,19 @@ const App = {
       p3: parts[3] || null
     };
 
+    // Leaving a lecture route must also stop its iframe and close its viewer.
+    if (previousRoute === 'material' && (this.currentRoute !== 'material' || this.routeParams.p1 !== previousMaterialId)) {
+      const videoFrame = document.getElementById('video-modal-iframe');
+      const pdfViewport = document.getElementById('pdf-modal-viewport');
+      if (videoFrame) videoFrame.src = '';
+      if (pdfViewport) pdfViewport.innerHTML = '';
+      this.currentViewingPdf = null;
+      document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+    }
+
     // إغلاق القائمة الجانبية للموبايل عند التنقل
     this.closeMobileMenu();
     // تمرير الشاشة إلى الأعلى
@@ -106,7 +121,14 @@ const App = {
 
   navigateTo(path) {
     const route = String(path || '').replace(/^#\/?/, '').replace(/^\/+|\/+$/g, '');
-    window.location.hash = route ? `#/${route}` : '#/';
+    const encodedRoute = route.split('/').map(part => {
+      try {
+        return encodeURIComponent(decodeURIComponent(part));
+      } catch (err) {
+        return encodeURIComponent(part);
+      }
+    }).join('/');
+    window.location.hash = encodedRoute ? `#/${encodedRoute}` : '#/';
   },
 
   renderCurrentView() {
@@ -138,8 +160,23 @@ const App = {
         this.renderYearView(mainContainer, this.routeParams.p1, this.routeParams.p2);
         break;
       case 'subject':
-        this.renderSubjectView(mainContainer, this.routeParams.p1);
+        this.renderSubjectView(mainContainer, this.routeParams.p1, this.routeParams.p2);
         break;
+      case 'material': {
+        const material = window.academicDB.getMaterialById(this.routeParams.p1);
+        const subject = material ? window.academicDB.getSubjectById(material.subject_id) : null;
+        if (!material || !subject) {
+          this.renderNotFound(mainContainer, 'المحاضرة أو المستند المطلوب غير موجود');
+          break;
+        }
+        this.renderSubjectView(mainContainer, subject.id, material.category);
+        if (material.youtube_url) {
+          this.openVideoModal(material.id);
+        } else {
+          this.openPdfViewer(material.id);
+        }
+        break;
+      }
       case 'about':
         this.renderAboutView(mainContainer);
         break;
@@ -156,7 +193,7 @@ const App = {
         this.renderAdminDashboard(mainContainer);
         break;
       default:
-        this.renderHomeView(mainContainer);
+        this.renderNotFound(mainContainer, 'الصفحة المطلوبة غير موجودة');
         break;
     }
 
@@ -166,11 +203,28 @@ const App = {
 
   // تحديث حالة الروابط النشطة في شريط التنقل
   updateNavActiveState() {
+    let currentYear = null;
+    if (this.currentRoute === 'year') {
+      currentYear = window.academicDB.getYearById(this.routeParams.p1);
+    } else if (this.currentRoute === 'subject') {
+      const subject = window.academicDB.getSubjectById(this.routeParams.p1);
+      const semester = subject ? window.academicDB.getSemesterById(subject.semester_id) : null;
+      currentYear = semester ? window.academicDB.getYearById(semester.year_id) : null;
+    } else if (this.currentRoute === 'material') {
+      const material = window.academicDB.getMaterialById(this.routeParams.p1);
+      const subject = material ? window.academicDB.getSubjectById(material.subject_id) : null;
+      const semester = subject ? window.academicDB.getSemesterById(subject.semester_id) : null;
+      currentYear = semester ? window.academicDB.getYearById(semester.year_id) : null;
+    } else {
+      currentYear = window.academicDB.getYearById(this.currentRoute);
+    }
+
     document.querySelectorAll('[data-nav-target]').forEach(link => {
       const target = link.getAttribute('data-nav-target');
+      const targetYear = window.academicDB.getYearById(target);
       if (
         (target === 'home' && this.currentRoute === 'home') ||
-        (target === this.routeParams.p1 && this.currentRoute === 'year') ||
+        (currentYear && targetYear && currentYear.id === targetYear.id) ||
         (target === this.currentRoute)
       ) {
         link.classList.add('text-amber-500', 'font-bold', 'border-b-2', 'border-amber-500');
@@ -601,7 +655,9 @@ const App = {
   // ====================================================================
   // 3. عرض صفحة المادة الدراسية المخصصة (Dedicated Subject Page)
   // ====================================================================
-  renderSubjectView(container, subjectId) {
+  renderSubjectView(container, subjectId, categoryId = 'lectures') {
+    const validCategory = MATERIAL_CATEGORIES.some(category => category.id === categoryId);
+    this.activeCategoryTab = validCategory ? categoryId : 'lectures';
     const subject = window.academicDB.getSubjectById(subjectId);
     if (!subject) {
       this.renderNotFound(container, 'المادة الدراسية المطلوبة غير موجودة');
@@ -786,7 +842,7 @@ const App = {
                       ${ytId ? `
                         <!-- معاينة وصورة مصغرة لفيديو YouTube -->
                         <div 
-                          onclick="App.openVideoModal('${mat.id}')"
+                          onclick="App.navigateTo('material/${mat.id}')"
                           class="relative w-full aspect-video rounded-xl overflow-hidden mb-3.5 bg-black cursor-pointer group/thumb border border-slate-700/60 shadow-sm"
                         >
                           <img 
@@ -867,7 +923,7 @@ const App = {
                     <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
                       ${mat.youtube_url ? `
                         <button 
-                          onclick="App.openVideoModal('${mat.id}')"
+                          onclick="App.navigateTo('material/${mat.id}')"
                           class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95"
                         >
                           <i data-lucide="play" class="w-4 h-4 fill-white"></i>
@@ -886,7 +942,7 @@ const App = {
                         </a>
                       ` : `
                         <button 
-                          onclick="App.openPdfViewer('${mat.id}')"
+                          onclick="App.navigateTo('material/${mat.id}')"
                           class="flex-1 py-2 rounded-xl bg-blue-900 dark:bg-blue-800 hover:bg-blue-800 dark:hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
                         >
                           <i data-lucide="eye" class="w-4 h-4"></i>
@@ -914,18 +970,59 @@ const App = {
   },
 
   switchCategoryTab(subjectId, categoryId) {
-    this.activeCategoryTab = categoryId;
-    this.renderSubjectView(document.getElementById('main-content'), subjectId);
-    this.refreshIcons();
+    if (!MATERIAL_CATEGORIES.some(category => category.id === categoryId)) return;
+    this.navigateTo(`subject/${subjectId}/${categoryId}`);
   },
 
   // ====================================================================
   // 4. قارئ الـ PDF المدمج (Integrated PDF Viewer Modal)
   // ====================================================================
-  openPdfViewer(materialId) {
+  getMaterialFileUrl(material) {
+    if (!material) return null;
+    const source = material.file_data_url || material.public_url || material.file_path;
+    if (!source || source === 'youtube') return null;
+    if (/^(?:https?:|data:|blob:)/i.test(source)) return source;
+
+    const client = window.academicDB && window.academicDB.client;
+    if (client && client.storage) {
+      try {
+        const { data } = client.storage.from('academic-materials').getPublicUrl(source.replace(/^\/+/, ''));
+        if (data && data.publicUrl) return data.publicUrl;
+      } catch (err) {
+        console.warn('Could not resolve academic file from Supabase Storage:', err);
+      }
+    }
+
+    try {
+      return new URL(source, document.baseURI).href;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  async isMaterialFileAvailable(url) {
+    if (/^(?:data:|blob:)/i.test(url)) return true;
+    try {
+      const parsed = new URL(url);
+      if (parsed.origin !== window.location.origin) return true;
+      const response = await fetch(parsed.href, { method: 'HEAD', cache: 'no-store' });
+      return response.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  async openPdfViewer(materialId) {
+    const openedFromMaterialRoute = this.currentRoute === 'material' && this.routeParams.p1 === materialId;
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) {
       this.showToast('تعذر العثور على المستند المطلوب', 'error');
+      return;
+    }
+
+    const targetUrl = this.getMaterialFileUrl(mat);
+    if (!targetUrl) {
+      this.showToast('رابط هذا المستند غير متوفر حالياً', 'error');
       return;
     }
 
@@ -938,11 +1035,18 @@ const App = {
     if (titleEl) titleEl.textContent = mat.title;
     if (sizeEl) sizeEl.textContent = `${mat.file_name || 'document.pdf'} (${mat.file_size || 'PDF'})`;
 
-    // تحديد مسار المستند سواء كان مساراً محلياً، رابط DataURL، أو مسار عينة
-    const targetUrl = mat.file_data_url || mat.file_path || 'sample_docs/geology_lec1_intro.pdf';
+    // Check same-origin paths so missing files do not become broken 404 iframes.
+    const fileUnavailable = !(await this.isMaterialFileAvailable(targetUrl));
+    if (openedFromMaterialRoute && (this.currentRoute !== 'material' || this.routeParams.p1 !== materialId)) return;
 
     if (viewport) {
-      viewport.innerHTML = `
+      viewport.innerHTML = fileUnavailable ? `
+        <div class="h-full min-h-64 flex flex-col items-center justify-center text-center text-white p-8">
+          <i data-lucide="file-warning" class="w-10 h-10 text-amber-400 mb-3"></i>
+          <h4 class="font-bold mb-2">ملف المستند غير متاح على الموقع</h4>
+          <p class="text-sm text-slate-300">احتفظنا ببيانات المستند، لكن مساره الحالي لا يشير إلى ملف منشور. يرجى إعادة ربطه بملف التخزين المعتمد.</p>
+        </div>
+      ` : `
         <object 
           data="${targetUrl}" 
           type="application/pdf" 
@@ -980,6 +1084,7 @@ const App = {
       modal.classList.remove('flex');
     }
     this.currentViewingPdf = null;
+    this.returnToSubjectFromMaterialRoute();
   },
 
   downloadCurrentPdf() {
@@ -988,11 +1093,20 @@ const App = {
     }
   },
 
-  downloadPdf(materialId) {
+  async downloadPdf(materialId) {
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) return;
 
-    const targetUrl = mat.file_data_url || mat.file_path || 'sample_docs/geology_lec1_intro.pdf';
+    const targetUrl = this.getMaterialFileUrl(mat);
+    if (!targetUrl) {
+      this.showToast('رابط هذا المستند غير متوفر حالياً', 'error');
+      return;
+    }
+
+    if (!(await this.isMaterialFileAvailable(targetUrl))) {
+      this.showToast('ملف المستند غير منشور على الموقع حالياً', 'error');
+      return;
+    }
     const link = document.createElement('a');
     link.href = targetUrl;
     link.download = mat.file_name || `${mat.title.replace(/\s+/g, '_')}.pdf`;
@@ -1782,6 +1896,18 @@ const App = {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
     }
+    this.returnToSubjectFromMaterialRoute();
+  },
+
+  returnToSubjectFromMaterialRoute() {
+    if (this.currentRoute !== 'material') return;
+    const material = window.academicDB.getMaterialById(this.routeParams.p1);
+    const subject = material ? window.academicDB.getSubjectById(material.subject_id) : null;
+    if (subject) {
+      const route = `#/subject/${encodeURIComponent(subject.id)}/${encodeURIComponent(material.category || 'lectures')}`;
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}${route}`);
+      this.handleRouting();
+    }
   },
 
   // معالجة اختيار ملف من القرص المحلي وتحويله إلى DataURL للمعاينة والتحميل
@@ -2057,7 +2183,7 @@ const App = {
 
                     <div class="flex items-center gap-2">
                       <button 
-                        onclick="App.closeSearchModal(); App.openPdfViewer('${mat.id}')"
+                        onclick="App.closeSearchModal(); App.navigateTo('material/${mat.id}')"
                         class="px-2.5 py-1 rounded-lg bg-blue-900 text-white text-xs font-bold hover:bg-blue-800"
                       >
                         قراءة
@@ -2225,6 +2351,7 @@ const App = {
   },
 
   closeAllModals() {
+    this.returnToSubjectFromMaterialRoute();
     document.querySelectorAll('.modal-overlay').forEach(modal => {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
