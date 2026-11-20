@@ -74,6 +74,16 @@ const App = {
     }
   },
 
+  escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[character]));
+  },
+
   // ==========================================
   // نظام التوجيه والتنقل (Routing System)
   // ==========================================
@@ -1406,6 +1416,7 @@ const App = {
 
     const totalSubjects = window.academicDB.data.subjects.length;
     const totalMaterials = window.academicDB.data.materials.length;
+    const adminMaterials = window.academicDB.data.materials;
     const years = window.academicDB.getYears();
 
     container.innerHTML = `
@@ -1595,6 +1606,75 @@ const App = {
           </div>
         </div>
 
+        <!-- إدارة المحاضرات والمستندات -->
+        <div class="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg">
+          <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h3 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="files" class="w-5 h-5 text-amber-500"></i>
+                <span>إدارة المحاضرات والمستندات</span>
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">تعديل بيانات أي مستند أو محاضرة وحذف سجلها من المنصة</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                type="search"
+                id="admin-materials-filter"
+                placeholder="ابحث بالعنوان أو المادة أو الملف..."
+                oninput="App.filterAdminMaterials(this.value)"
+                class="w-full sm:w-72 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+              >
+              <span class="shrink-0 px-2.5 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-bold">${adminMaterials.length}</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] text-right text-xs">
+              <thead class="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th class="p-3.5">عنوان المحاضرة / المستند</th>
+                  <th class="p-3.5">المادة الدراسية</th>
+                  <th class="p-3.5">النوع</th>
+                  <th class="p-3.5">الملف أو الرابط</th>
+                  <th class="p-3.5 text-center">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="admin-materials-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                ${adminMaterials.length ? adminMaterials.map(mat => {
+                  const subject = window.academicDB.getSubjectById(mat.subject_id);
+                  const category = MATERIAL_CATEGORIES.find(item => item.id === mat.category);
+                  const materialTitle = this.escapeHtml(mat.title || 'بدون عنوان');
+                  const subjectName = this.escapeHtml(subject ? subject.name : 'مادة غير معروفة');
+                  const categoryName = this.escapeHtml(category ? category.label_ar : mat.category || 'غير مصنف');
+                  const fileName = this.escapeHtml(mat.youtube_url ? 'رابط فيديو YouTube' : mat.file_name || mat.file_path || 'بدون ملف');
+                  const safeId = this.escapeHtml(mat.id);
+
+                  return `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-colors">
+                      <td class="p-3.5 font-bold text-slate-900 dark:text-white">${materialTitle}</td>
+                      <td class="p-3.5 text-slate-600 dark:text-slate-300">${subjectName}</td>
+                      <td class="p-3.5"><span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${categoryName}</span></td>
+                      <td class="p-3.5 max-w-xs truncate text-slate-500 dark:text-slate-400" title="${fileName}">${fileName}</td>
+                      <td class="p-3.5 text-center">
+                        <div class="inline-flex items-center gap-1.5">
+                          <button type="button" data-material-id="${safeId}" onclick="App.openEditMaterialModal(this.dataset.materialId)" class="p-2 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" title="تعديل بيانات المحاضرة أو المستند" aria-label="تعديل ${materialTitle}">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                          </button>
+                          <button type="button" data-material-id="${safeId}" onclick="App.deleteMaterialPrompt(this.dataset.materialId)" class="p-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20" title="حذف من المنصة" aria-label="حذف ${materialTitle}">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('') : `
+                  <tr><td colspan="5" class="p-8 text-center text-slate-500 dark:text-slate-400">لا توجد محاضرات أو مستندات مضافة حالياً.</td></tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+          <p class="px-5 pb-4 text-[11px] text-slate-400">الحذف يزيل سجل المستند من المنصة؛ ملف التخزين الأصلي لا يُحذف تلقائياً.</p>
+        </div>
+
         <!-- إعدادات Supabase السحابية (اختيارية) -->
         <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800">
           <div class="flex items-start justify-between gap-4 flex-wrap mb-4">
@@ -1661,6 +1741,23 @@ const App = {
 
       </div>
     `;
+  },
+
+  filterAdminRows(tbodyId, query) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const normalizedQuery = String(query || '').trim().toLocaleLowerCase();
+    tbody.querySelectorAll('tr').forEach(row => {
+      row.classList.toggle('hidden', Boolean(normalizedQuery) && !row.textContent.toLocaleLowerCase().includes(normalizedQuery));
+    });
+  },
+
+  filterAdminSubjects(query) {
+    this.filterAdminRows('admin-subjects-tbody', query);
+  },
+
+  filterAdminMaterials(query) {
+    this.filterAdminRows('admin-materials-tbody', query);
   },
 
   // ====================================================================
@@ -2019,43 +2116,187 @@ const App = {
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) return;
 
-    const newTitle = prompt('تعديل عنوان المستند:', mat.title);
-    if (newTitle && newTitle.trim()) {
-      const newDesc = prompt('تعديل الوصف الاختياري للمستند:', mat.description || '');
-      window.academicDB.updateMaterial(materialId, {
-        title: newTitle.trim(),
-        description: newDesc !== null ? newDesc.trim() : mat.description
-      });
-      this.showToast('تم تحديث بيانات المستند بنجاح', 'success');
+    const modal = document.getElementById('material-edit-modal');
+    const form = document.getElementById('material-edit-form');
+    if (!modal || !form) return;
+
+    form.reset();
+    document.getElementById('material-edit-id').value = mat.id;
+    document.getElementById('material-edit-title').value = mat.title || '';
+    document.getElementById('material-edit-description').value = mat.description || '';
+    document.getElementById('material-edit-youtube').value = mat.youtube_url || '';
+    document.getElementById('material-edit-lecture-number').value = mat.lecture_number || '';
+    this.populateMaterialSubjectSelect('material-edit-subject', mat.subject_id);
+
+    const categorySelect = document.getElementById('material-edit-category');
+    categorySelect.innerHTML = '';
+    MATERIAL_CATEGORIES.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category.id;
+      option.textContent = category.label_ar;
+      option.selected = category.id === mat.category;
+      categorySelect.appendChild(option);
+    });
+
+    const fileLabel = document.getElementById('material-edit-current-file');
+    if (fileLabel) {
+      fileLabel.textContent = mat.youtube_url
+        ? `الفيديو الحالي: ${mat.youtube_url}`
+        : `الملف الحالي: ${mat.file_name || mat.file_path || 'غير محدد'}`;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    this.refreshIcons();
+  },
+
+  populateMaterialSubjectSelect(selectId, selectedId = null) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.innerHTML = '';
+    window.academicDB.data.subjects.forEach(subject => {
+      const semester = window.academicDB.getSemesterById(subject.semester_id);
+      const year = semester ? window.academicDB.getYearById(semester.year_id) : null;
+      const option = document.createElement('option');
+      option.value = subject.id;
+      option.textContent = `${year ? `${year.name_ar} • ` : ''}${subject.name}`;
+      option.selected = subject.id === selectedId;
+      select.appendChild(option);
+    });
+  },
+
+  async handleEditMaterialSubmit(e) {
+    e.preventDefault();
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، تعديل المستندات يتطلب تصريح مسؤول.', 'error');
+      this.closeModal('material-edit-modal');
+      this.openAdminLoginModal();
+      return;
+    }
+
+    const materialId = document.getElementById('material-edit-id').value;
+    const mat = window.academicDB.getMaterialById(materialId);
+    if (!mat) {
+      this.showToast('تعذر العثور على المستند المطلوب', 'error');
+      this.closeModal('material-edit-modal');
+      return;
+    }
+
+    const subjectId = document.getElementById('material-edit-subject').value;
+    const category = document.getElementById('material-edit-category').value;
+    const title = document.getElementById('material-edit-title').value.trim();
+    const description = document.getElementById('material-edit-description').value.trim();
+    const youtubeUrl = document.getElementById('material-edit-youtube').value.trim();
+    const lectureValue = document.getElementById('material-edit-lecture-number').value;
+    const fileInput = document.getElementById('material-edit-file');
+    const file = fileInput.files && fileInput.files[0];
+    const usesYouTube = category === 'lectures' && Boolean(youtubeUrl);
+    const hasExistingFile = Boolean(mat.file_data_url || mat.public_url || (mat.file_path && mat.file_path !== 'youtube'));
+
+    if (!subjectId || !window.academicDB.getSubjectById(subjectId) || !MATERIAL_CATEGORIES.some(item => item.id === category) || !title) {
+      this.showToast('يرجى التأكد من المادة ونوع المحتوى والعنوان', 'error');
+      return;
+    }
+    if (youtubeUrl && !this.getYouTubeId(youtubeUrl)) {
+      this.showToast('يرجى إدخال رابط YouTube صحيح', 'error');
+      return;
+    }
+    if (file && file.size > 50 * 1024 * 1024) {
+      this.showToast('حجم الملف كبير جداً! الحد الأقصى هو 50 ميغابايت', 'error');
+      return;
+    }
+    if (usesYouTube && file) {
+      this.showToast('اختر رابط YouTube أو ملفاً بديلاً، وليس الاثنين معاً', 'error');
+      return;
+    }
+    if (!usesYouTube && !file && !hasExistingFile) {
+      this.showToast('هذا السجل لا يحتوي ملفاً؛ أرفق ملفاً أو أضف رابط YouTube للمحاضرة', 'error');
+      return;
+    }
+
+    const submitButton = document.getElementById('material-edit-save');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'جارٍ حفظ التعديلات...';
+    }
+
+    try {
+      const updates = {
+        subject_id: subjectId,
+        category,
+        title,
+        description,
+        youtube_url: usesYouTube ? youtubeUrl : null,
+        lecture_number: category === 'lectures' && lectureValue ? Number(lectureValue) : null
+      };
+
+      if (file) {
+        const upload = await window.academicDB.uploadAcademicFile(file, category);
+        updates.file_path = upload.public_url || upload.file_path;
+        updates.file_name = upload.file_name || file.name;
+        updates.file_size = upload.file_size || `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+        updates.file_type = upload.file_type || file.type || 'application/pdf';
+        updates.file_data_url = upload.file_data_url || null;
+      } else if (usesYouTube && !mat.file_path) {
+        updates.file_path = 'youtube';
+        updates.file_name = 'YouTube Video';
+        updates.file_size = 'YouTube';
+        updates.file_type = 'video/youtube';
+        updates.file_data_url = null;
+      }
+
+      await window.academicDB.updateMaterial(materialId, updates);
+      this.closeModal('material-edit-modal');
+      this.showToast('تم تحديث بيانات المحاضرة أو المستند بنجاح', 'success');
       this.renderCurrentView();
+    } catch (err) {
+      this.showToast('فشل تحديث المستند: ' + err.message, 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'حفظ التعديلات';
+      }
     }
   },
 
   // استبدال ملف مستند بملف جديد
   openReplaceFileModal(materialId) {
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، استبدال الملفات يتطلب تصريح مسؤول.', 'error');
+      this.openAdminLoginModal();
+      return;
+    }
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,.doc,.docx,.ppt,.pptx';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        window.academicDB.replaceMaterialFile(materialId, {
-          file_name: file.name,
-          file_size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          file_data_url: event.target.result
+      if (file.size > 50 * 1024 * 1024) {
+        this.showToast('حجم الملف كبير جداً! الحد الأقصى هو 50 ميغابايت', 'error');
+        return;
+      }
+      try {
+        const mat = window.academicDB.getMaterialById(materialId);
+        if (!mat) return;
+        const upload = await window.academicDB.uploadAcademicFile(file, mat.category || 'lectures');
+        await window.academicDB.updateMaterial(materialId, {
+          file_path: upload.public_url || upload.file_path,
+          file_name: upload.file_name || file.name,
+          file_size: upload.file_size || `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          file_type: upload.file_type || file.type || 'application/pdf',
+          file_data_url: upload.file_data_url || null,
+          youtube_url: null
         });
-        App.showToast('تم استبدال الملف بملف جديد بنجاح', 'success');
-        App.renderCurrentView();
-      };
-      reader.readAsDataURL(file);
+        this.showToast('تم استبدال الملف بنجاح', 'success');
+        this.renderCurrentView();
+      } catch (err) {
+        this.showToast('فشل استبدال الملف: ' + err.message, 'error');
+      }
     };
     input.click();
   },
 
-  async deleteMaterialPrompt(materialId, subjectId) {
+  async deleteMaterialPrompt(materialId) {
     if (!window.academicDB.isLoggedIn()) {
       this.showToast('عذراً، حذف المستندات يتطلب تصريح مسؤول.', 'error');
       this.openAdminLoginModal();
@@ -2064,7 +2305,7 @@ const App = {
     const mat = window.academicDB.getMaterialById(materialId);
     if (!mat) return;
 
-    if (confirm(`هل أنت متأكد من حذف المستند "${mat.title}"؟`)) {
+    if (confirm(`هل تريد حذف "${mat.title}" من المنصة؟ سيُحذف سجل العرض فقط، ولن يُحذف ملف التخزين الأصلي.`)) {
       try {
         await window.academicDB.deleteMaterial(materialId);
         this.showToast('تم حذف المستند بنجاح', 'success');
