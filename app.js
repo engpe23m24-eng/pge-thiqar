@@ -541,12 +541,19 @@ const App = {
                   </div>
 
                   <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold">
-                    <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-500"></i>
-                      <span>${materials.length} مستند</span>
+                    <span class="text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                      <span class="flex items-center gap-1" title="فيديوهات YouTube">
+                        <i data-lucide="youtube" class="w-3.5 h-3.5 text-red-500"></i>
+                        <span>${lecturesCount}</span>
+                      </span>
+                      <span>•</span>
+                      <span class="flex items-center gap-1" title="إجمالي الملفات">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-500"></i>
+                        <span>${materials.length} ملف</span>
+                      </span>
                     </span>
                     <span class="text-blue-700 dark:text-amber-400 group-hover:underline flex items-center gap-1">
-                      <span>عرض المحاضرات</span>
+                      <span>YouTube Videos • دخول</span>
                       <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                     </span>
                   </div>
