@@ -2457,6 +2457,13 @@ const App = {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
+    const setupPanel = document.getElementById('supabase-bootstrap-panel');
+    const urlInput = document.getElementById('supabase-bootstrap-url');
+    const keyInput = document.getElementById('supabase-bootstrap-anon-key');
+    if (urlInput) urlInput.value = SupabaseConfig.getUrl();
+    if (keyInput) keyInput.value = SupabaseConfig.getKey();
+    if (setupPanel) setupPanel.open = !SupabaseConfig.isConnected();
+    this.refreshIcons();
   },
 
   async handleAdminLoginSubmit(e) {
@@ -2491,6 +2498,71 @@ const App = {
         submitBtn.disabled = false;
         submitBtn.textContent = 'تسجيل الدخول الآمن';
       }
+    }
+  },
+
+  async saveSupabaseBootstrapSettings(e) {
+    e.preventDefault();
+    const urlInput = document.getElementById('supabase-bootstrap-url');
+    const keyInput = document.getElementById('supabase-bootstrap-anon-key');
+    const url = urlInput ? urlInput.value.trim() : '';
+    const key = keyInput ? keyInput.value.trim() : '';
+
+    if (!url || !key) {
+      this.showToast('أدخل Project URL و anon/public key من إعدادات مشروع Supabase.', 'error');
+      return;
+    }
+    let keyRole = null;
+    const tokenPayload = key.split('.')[1];
+    if (tokenPayload && typeof window.atob === 'function') {
+      try {
+        let base64Payload = tokenPayload.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64Payload.length % 4) base64Payload += '=';
+        keyRole = JSON.parse(window.atob(base64Payload)).role || null;
+      } catch (err) {
+        keyRole = null;
+      }
+    }
+    if (key.toLowerCase().startsWith('sb_secret_') || keyRole === 'service_role') {
+      this.showToast('هذا مفتاح سري عالي الصلاحية. استخدم anon/public أو publishable key فقط.', 'error');
+      return;
+    }
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'https:') {
+        this.showToast('يجب أن يبدأ رابط مشروع Supabase بـ https://', 'error');
+        return;
+      }
+    } catch (err) {
+      this.showToast('رابط مشروع Supabase غير صحيح.', 'error');
+      return;
+    }
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      this.showToast('تعذر تحميل مكتبة Supabase. حدّث الصفحة وحاول مرة أخرى.', 'error');
+      return;
+    }
+
+    try {
+      SupabaseConfig.saveCredentials(url, key);
+      window.academicDB.client = null;
+      window.academicDB.currentUser = null;
+      window.academicDB.adminProfile = null;
+      window.academicDB.initSupabaseClient();
+      if (!window.academicDB.client) throw new Error('تعذر إنشاء اتصال Supabase');
+
+      const { error } = await window.academicDB.client.auth.getSession();
+      if (error) throw error;
+      const syncResult = await window.academicDB.syncFromSupabase();
+      const setupPanel = document.getElementById('supabase-bootstrap-panel');
+      if (setupPanel) setupPanel.open = false;
+      this.updateAdminUIState();
+      if (syncResult.success) {
+        this.showToast('تم الاتصال ومزامنة البيانات. أدخل بريد المسؤول وكلمة مروره لتسجيل الدخول.', 'success');
+      } else {
+        this.showToast('حُفظت الإعدادات بهذا المتصفح، لكن تعذرت المزامنة. تحقق من URL والمفتاح ومخطط قاعدة البيانات.', 'info');
+      }
+    } catch (err) {
+      this.showToast('تعذر تهيئة الاتصال. تحقق من URL والمفتاح العام وحاول مرة أخرى.', 'error');
     }
   },
 
