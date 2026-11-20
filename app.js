@@ -704,13 +704,15 @@ const App = {
                 <p class="text-[11px] text-slate-500 dark:text-slate-400">يمكنك مشاهدة الفيديوهات مباشرة من المنصة أو فتحها على YouTube</p>
               </div>
             </div>
-            <button 
-              onclick="App.openUploadModal('${subject.id}', 'lectures')"
-              class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 shrink-0"
-            >
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              <span>إضافة رابط فيديو YouTube</span>
-            </button>
+            ${window.academicDB.isLoggedIn() ? `
+              <button 
+                onclick="App.openUploadModal('${subject.id}', 'lectures')"
+                class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 shrink-0"
+              >
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>إضافة رابط فيديو YouTube</span>
+              </button>
+            ` : ''}
           </div>
         ` : ''}
 
@@ -727,23 +729,15 @@ const App = {
               <p class="text-xs text-slate-500 dark:text-slate-400">
                 ${this.activeCategoryTab === 'lectures' ? 'اضغط على زر إضافة فيديو YouTube لوضع رابط المحاضرة أو الشرح التعليمي.' : 'سيتم رفع وتحديث الملفات والمصادر التعليمية من قبل أساتذة المادة.'}
               </p>
-              ${this.activeCategoryTab === 'lectures' ? `
-                <button 
-                  onclick="App.openUploadModal('${subject.id}', 'lectures')"
-                  class="mt-4 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center gap-2 active:scale-95"
-                >
-                  <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span>إضافة أول فيديو YouTube لهذه المادة</span>
-                </button>
-              ` : (window.academicDB.isLoggedIn() ? `
+              ${window.academicDB.isLoggedIn() ? `
                 <button 
                   onclick="App.openUploadModal('${subject.id}', '${this.activeCategoryTab}')"
-                  class="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 transition-all inline-flex items-center gap-1.5"
+                  class="mt-4 px-4 py-2.5 rounded-xl ${this.activeCategoryTab === 'lectures' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-slate-950'} font-bold text-xs shadow-md transition-all inline-flex items-center gap-2 active:scale-95"
                 >
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span>رفع أول مستند في هذا القسم</span>
+                  <span>${this.activeCategoryTab === 'lectures' ? 'إضافة فيديو YouTube لهذه المادة' : 'رفع أول مستند في هذا القسم'}</span>
                 </button>
-              ` : '')}
+              ` : ''}
             </div>
           ` : `
             <!-- قائمة المستندات والمحاضرات والفيديوهات -->
@@ -1641,6 +1635,11 @@ const App = {
 
   // رفع مستند / محاضرة (مع دعم السحب والإفلات وقراءة الملف المحلي)
   openUploadModal(defaultSubjectId = null, defaultCategory = 'lectures') {
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، إضافة المحاضرات وفيديوهات YouTube مخصصة للادارة فقط. يرجى تسجيل الدخول كمسؤول.', 'warning');
+      this.openAdminLoginModal();
+      return;
+    }
     const modal = document.getElementById('upload-modal');
     const form = document.getElementById('upload-form');
     if (!modal || !form) return;
@@ -1774,6 +1773,12 @@ const App = {
 
   handleUploadFormSubmit(e) {
     e.preventDefault();
+    if (!window.academicDB.isLoggedIn()) {
+      this.showToast('عذراً، هذه العملية تتطلب تسجيل دخول كمسؤول النظام.', 'error');
+      this.closeModal('upload-modal');
+      this.openAdminLoginModal();
+      return;
+    }
     const subjectId = document.getElementById('upload-subject-select').value;
     const category = document.getElementById('upload-category-select').value;
     const title = document.getElementById('upload-title-input').value;
