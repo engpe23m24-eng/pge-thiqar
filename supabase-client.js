@@ -206,59 +206,40 @@ class AcademicDataManager {
     if (!yearId) return null;
     const str = String(yearId).trim().toLowerCase();
 
-    // Mapping dictionary for numeric, string, Arabic, and slug formats
-    const yearAliasMap = {
-      '1': 'year-1',
-      'year-1': 'year-1',
-      'year1': 'year-1',
-      'stage-1': 'year-1',
-      'stage1': 'year-1',
-      'first': 'year-1',
-      'first-year': 'year-1',
-      '2': 'year-2',
-      'year-2': 'year-2',
-      'year2': 'year-2',
-      'stage-2': 'year-2',
-      'stage2': 'year-2',
-      'second': 'year-2',
-      'second-year': 'year-2',
-      '3': 'year-3',
-      'year-3': 'year-3',
-      'year3': 'year-3',
-      'stage-3': 'year-3',
-      'stage3': 'year-3',
-      'third': 'year-3',
-      'third-year': 'year-3',
-      '4': 'year-4',
-      'year-4': 'year-4',
-      'year4': 'year-4',
-      'stage-4': 'year-4',
-      'stage4': 'year-4',
-      'fourth': 'year-4',
-      'fourth-year': 'year-4'
+    const hasLiveYears = this.data && Array.isArray(this.data.years) && this.data.years.length > 0;
+    const list = hasLiveYears ? this.data.years : (INITIAL_ACADEMIC_DATA.years || []);
+    const normalizeId = value => String(value || '').trim().toLowerCase();
+
+    // Prefer the actual record ID. Supabase may use UUIDs while older links
+    // and bookmarks use year-1 / stage-1 / numeric IDs.
+    const exact = list.find(year => normalizeId(year.id) === str);
+    if (exact) return exact;
+
+    const aliases = {
+      '1': 1, 'year-1': 1, 'year1': 1, 'stage-1': 1, 'stage1': 1,
+      'first': 1, 'first-year': 1, 'المرحلة-الأولى': 1,
+      '2': 2, 'year-2': 2, 'year2': 2, 'stage-2': 2, 'stage2': 2,
+      'second': 2, 'second-year': 2, 'المرحلة-الثانية': 2,
+      '3': 3, 'year-3': 3, 'year3': 3, 'stage-3': 3, 'stage3': 3,
+      'third': 3, 'third-year': 3, 'المرحلة-الثالثة': 3,
+      '4': 4, 'year-4': 4, 'year4': 4, 'stage-4': 4, 'stage4': 4,
+      'fourth': 4, 'fourth-year': 4, 'المرحلة-الرابعة': 4
     };
 
-    const targetId = yearAliasMap[str] || str;
-
-    // Search in current data
-    const list = (this.data && Array.isArray(this.data.years) && this.data.years.length > 0)
-      ? this.data.years
-      : INITIAL_ACADEMIC_DATA.years;
-
-    let found = list.find(y => y.id === targetId || y.id === str);
-    if (!found) {
-      found = list.find(y => {
-        const yId = String(y.id || '').toLowerCase();
-        const yEn = String(y.name_en || '').toLowerCase();
-        return yId === targetId || yEn.includes(str) || (str.includes('1') && yId === 'year-1') || (str.includes('2') && yId === 'year-2') || (str.includes('3') && yId === 'year-3') || (str.includes('4') && yId === 'year-4');
-      });
+    let order = aliases[str];
+    if (!order) {
+      const name = str.replace(/[_\s]+/g, '-');
+      const englishNames = { 'first-year': 1, 'second-year': 2, 'third-year': 3, 'fourth-year': 4 };
+      order = englishNames[name];
     }
+    if (!order) return null;
 
-    // Safety fallback to INITIAL_ACADEMIC_DATA
-    if (!found && INITIAL_ACADEMIC_DATA.years) {
-      found = INITIAL_ACADEMIC_DATA.years.find(y => y.id === targetId || y.id === str);
-    }
-    return found || null;
+    const byOrder = list.find(year => Number(year.display_order) === order);
+    if (byOrder) return byOrder;
+
+    // Only use seed IDs when no live dataset exists. Returning a seed record
+    // for a different live ID breaks its semester foreign-key relationship.
+    return hasLiveYears ? null : (INITIAL_ACADEMIC_DATA.years || []).find(year => Number(year.display_order) === order) || null;
   }
 
   getSemestersByYear(yearId) {

@@ -79,7 +79,14 @@ const App = {
   // ==========================================
   handleRouting() {
     const hash = window.location.hash || '#/';
-    const parts = hash.replace(/^#\/?/, '').split('/');
+    const routeText = hash.replace(/^#/, '').split('?')[0].replace(/^\/+|\/+$/g, '');
+    const parts = routeText ? routeText.split('/').map(part => {
+      try {
+        return decodeURIComponent(part);
+      } catch (err) {
+        return part;
+      }
+    }) : [];
     const mainRoute = parts[0] || 'home';
 
     this.currentRoute = mainRoute;
@@ -98,7 +105,8 @@ const App = {
   },
 
   navigateTo(path) {
-    window.location.hash = path.startsWith('/') ? '#' + path : '#/' + path;
+    const route = String(path || '').replace(/^#\/?/, '').replace(/^\/+|\/+$/g, '');
+    window.location.hash = route ? `#/${route}` : '#/';
   },
 
   renderCurrentView() {
