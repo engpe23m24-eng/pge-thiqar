@@ -2559,11 +2559,33 @@ const App = {
       if (syncResult.success) {
         this.showToast('تم الاتصال ومزامنة البيانات. أدخل بريد المسؤول وكلمة مروره لتسجيل الدخول.', 'success');
       } else {
-        this.showToast('حُفظت الإعدادات بهذا المتصفح، لكن تعذرت المزامنة. تحقق من URL والمفتاح ومخطط قاعدة البيانات.', 'info');
+        this.showToast(`حُفظت الإعدادات، لكن ${this.getSupabaseSyncFailureMessage(syncResult)}`, 'info');
       }
     } catch (err) {
       this.showToast('تعذر تهيئة الاتصال. تحقق من URL والمفتاح العام وحاول مرة أخرى.', 'error');
     }
+  },
+
+  getSupabaseSyncFailureMessage(result = {}) {
+    const code = String(result.code || '').toUpperCase();
+    const table = ['academic_years', 'semesters', 'subjects', 'materials'].includes(result.table)
+      ? result.table
+      : null;
+
+    if (code === 'NO_CLIENT') return 'لم يتكوّن اتصال Supabase؛ تحقق من Project URL والمفتاح العام.';
+    if (code === 'NETWORK_ERROR') return 'تعذر الوصول إلى Supabase؛ تحقق من Project URL والاتصال بالإنترنت.';
+    if (['42P01', 'PGRST204', 'PGRST205'].includes(code)) {
+      return `جدول ${table || 'المقررات'} غير موجود أو غير ظاهر في Supabase. شغّل ملف supabase_schema.sql من SQL Editor.`;
+    }
+    if (code === '42501' || Number(result.status) === 403) {
+      return `صلاحيات القراءة تمنع الوصول${table ? ` إلى جدول ${table}` : ''}. تحقق من سياسات SELECT وRLS في supabase_schema.sql.`;
+    }
+    if (Number(result.status) === 401 || code === 'PGRST301') {
+      return 'مفتاح anon/public غير مقبول من المشروع؛ انسخه مجدداً من إعدادات Supabase.';
+    }
+    if (code === 'EMPTY_RESPONSE') return 'لم ترجع الجداول بيانات؛ تحقق من تهيئة مخطط قاعدة البيانات وسياسات القراءة.';
+    const safeCode = /^[A-Z0-9_-]+$/.test(code) ? ` (رمز ${code})` : '';
+    return `تعذر قراءة البيانات${table ? ` من جدول ${table}` : ''}${safeCode}. تحقق من إعدادات المشروع والجداول.`;
   },
 
   async logoutAdmin() {
@@ -2617,6 +2639,8 @@ const App = {
       window.academicDB.syncFromSupabase().then(res => {
         if (res.success) {
           this.showToast(`تمت مزامنة ${res.count} مادة من قاعدة بيانات Supabase!`, 'success');
+        } else {
+          this.showToast(this.getSupabaseSyncFailureMessage(res), 'info');
         }
         this.renderCurrentView();
       });

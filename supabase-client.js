@@ -166,14 +166,30 @@ class AcademicDataManager {
 
   // مزامنة البيانات من قاعدة بيانات Supabase (قراءة عامة للطلبة والزوار)
   async syncFromSupabase() {
-    if (!this.client) return { success: false, message: 'Supabase is not connected' };
+    if (!this.client) return { success: false, code: 'NO_CLIENT' };
     try {
-      const [yearsRes, semRes, subRes, matRes] = await Promise.all([
-        this.client.from('academic_years').select('*').order('display_order'),
-        this.client.from('semesters').select('*').order('display_order'),
-        this.client.from('subjects').select('*').order('display_order'),
-        this.client.from('materials').select('*').order('created_at', { ascending: false })
-      ]);
+      const tableQueries = [
+        ['academic_years', this.client.from('academic_years').select('*').order('display_order')],
+        ['semesters', this.client.from('semesters').select('*').order('display_order')],
+        ['subjects', this.client.from('subjects').select('*').order('display_order')],
+        ['materials', this.client.from('materials').select('*').order('created_at', { ascending: false })]
+      ];
+      const results = await Promise.all(tableQueries.map(([, query]) => query));
+      const failedIndex = results.findIndex(result => result.error);
+      if (failedIndex !== -1) {
+        const error = results[failedIndex].error;
+        return {
+          success: false,
+          table: tableQueries[failedIndex][0],
+          code: error.code || null,
+          status: error.status || null
+        };
+      }
+
+      const [yearsRes, semRes, subRes, matRes] = results;
+      if (![yearsRes.data, semRes.data, subRes.data, matRes.data].every(Array.isArray)) {
+        return { success: false, code: 'EMPTY_RESPONSE' };
+      }
 
       if (yearsRes.data && semRes.data && subRes.data) {
         const syncedData = {
@@ -187,8 +203,10 @@ class AcademicDataManager {
       }
     } catch (e) {
       console.warn('Supabase sync error:', e);
+      const isNetworkError = /fetch|network|timeout|load failed/i.test(String(e.message || e));
+      return { success: false, code: isNetworkError ? 'NETWORK_ERROR' : 'UNKNOWN_ERROR' };
     }
-    return { success: false };
+    return { success: false, code: 'EMPTY_RESPONSE' };
   }
 
   // ====================================================================
