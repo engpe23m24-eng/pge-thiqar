@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PGE-ThiQar | منصة هندسة النفط والغاز</title>
+  
+  <!-- Metadata & SEO -->
+  <meta name="description" content="المنصة التعليمية الأكاديمية لطلبة قسم هندسة النفط والغاز في كلية الهندسة - جامعة ذي قار. تنظيم المحاضرات، الملازم، الامتحانات، والمصادر لجميع المراحل.">
+  <meta name="keywords" content="جامعة ذي قار, كلية الهندسة, قسم هندسة النفط والغاز, محاضرات هندسة النفط, ملازم, امتحانات, Thi-Qar University, Petroleum and Gas Engineering">
+  <meta name="author" content="Department of Petroleum & Gas Engineering">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0a192f',
+              blue: '#0f2347',
+              gold: '#d97706',
+              lightGold: '#f59e0b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <meta name="application-name" content="PGE-ThiQar">
+  <meta name="short_name" content="PGE-ThiQar">
+
+  <!-- Custom Stylesheet with Luxury Navy & Gold Palette -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- ====================================================================
+       TOP NAVIGATION BAR
+  ==================================================================== -->
+  <header class="sticky top-0 z-40 glass-header shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- Logo Placeholder & University Brand Title -->
+      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="App.navigateTo('home')">
+        <!-- University Logo Placeholder Emblem -->
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-950 via-blue-900 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-blue-950/20 shrink-0 border border-amber-400/40 relative overflow-hidden group">
+          <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <i data-lucide="flame" class="w-7 h-7 text-amber-400"></i>
+        </div>
+        
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+              جامعة ذي قار
+            </h1>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              كلية الهندسة
+            </span>
+          </div>
+          <p class="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+            قسم هندسة النفط والغاز • البوابة الأكاديمية
+          </p>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Menu -->
+      <nav class="hidden lg:flex items-center gap-6 text-xs sm:text-sm font-bold">
+        <a href="#/" data-nav-target="home" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">الرئيسية</a>
+        <a href="#/year/year-1" data-nav-target="year-1" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الأولى</a>
+        <a href="#/year/year-2" data-nav-target="year-2" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الثانية</a>
+        <a href="#/year/year-3" data-nav-target="year-3" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الثالثة</a>
+        <a href="#/year/year-4" data-nav-target="year-4" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الرابعة</a>
+        <a href="#/about" data-nav-target="about" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">عن القسم</a>
+        <a href="#/contact" data-nav-target="contact" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">تواصل معنا</a>
+      </nav>
+
+      <!-- Right Action Tools -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Search Button -->
+        <button 
+          onclick="App.openGlobalSearch()" 
+          title="بحث شامل"
+          class="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+        >
+          <i data-lucide="search" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+          <span class="hidden md:inline">بحث</span>
+        </button>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button 
+          onclick="App.toggleTheme()" 
+          title="تبديل المظهر (ليلي / نهاري)"
+          class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          <i data-lucide="moon" class="theme-icon-moon w-4 h-4"></i>
+          <i data-lucide="sun" class="theme-icon-sun w-4 h-4 hidden text-amber-400"></i>
+        </button>
+
+        <!-- Admin Login / Dashboard Button -->
+        <button 
+          id="nav-admin-login-btn"
+          onclick="App.openAdminLoginModal()"
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white shadow-sm transition-all"
+        >
+          <i data-lucide="lock" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">دخول الإدارة</span>
+        </button>
+
+        <!-- Mobile Menu Hamburger Button -->
+        <button 
+          onclick="App.toggleMobileMenu()"
+          class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
+          title="القائمة"
+        >
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobile-drawer" class="hidden lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-4 space-y-2">
+      <a href="#/" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">الرئيسية</a>
+      <a href="#/year/year-1" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الأولى</a>
+      <a href="#/year/year-2" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الثانية</a>
+      <a href="#/year/year-3" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الثالثة</a>
+      <a href="#/year/year-4" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الرابعة</a>
+      <a href="#/about" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">عن القسم</a>
+      <a href="#/contact" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">تواصل معنا</a>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       MAIN DYNAMIC CONTENT CONTAINER
+  ==================================================================== -->
+  <main id="main-content" class="flex-1">
+    <!-- يتم بناء المشاهد ديناميكياً بواسطة App.renderCurrentView() -->
+  </main>
+
+  <!-- ====================================================================
+       PROFESSIONAL FOOTER
+  ==================================================================== -->
+  <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 pt-16 pb-12 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
+        
+        <!-- Col 1: University Identity -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold border border-amber-400/30">
+              <i data-lucide="flame" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-white">جامعة ذي قار</h3>
+              <p class="text-xs text-amber-400 font-bold">كلية الهندسة • قسم هندسة النفط والغاز</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            منصة تعليمية متخصصة تهدف إلى تنظيم المحاضرات، الملازم، المصادر، وأسئلة الامتحانات لطلبة قسم هندسة النفط والغاز في جامعة ذي قار لكافة المراحل الدراسية.
+          </p>
+        </div>
+
+        <!-- Col 2: Academic Years Quick Links -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-4">المراحل الأكاديمية</h4>
+          <ul class="space-y-2.5 text-xs">
+            <li><a href="#/year/year-1" class="hover:text-white transition-colors">المرحلة الأولى (First Year)</a></li>
+            <li><a href="#/year/year-2" class="hover:text-white transition-colors">المرحلة الثانية (Second Year)</a></li>
+            <li><a href="#/year/year-3" class="hover:text-white transition-colors">المرحلة الثالثة (Third Year)</a></li>
+            <li><a href="#/year/year-4" class="hover:text-white transition-colors">المرحلة الرابعة (Fourth Year)</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Sections & Resources -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-4">الأقسام التعليمية</h4>
+          <ul class="space-y-2.5 text-xs">
+            <li><span class="text-slate-400">المحاضرات النظرية (Lectures)</span></li>
+            <li><span class="text-slate-400">الملازم والشروحات (Booklets)</span></li>
+            <li><span class="text-slate-400">الواجبات الهندسية (Assignments)</span></li>
+            <li><span class="text-slate-400">أسئلة الامتحانات السابقة (Exams)</span></li>
+            <li><span class="text-slate-400">المراجع والمصادر (Resources)</span></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Official Disclaimer & Contact -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-4">تنويه وصفة المنصة</h4>
+          <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-400 leading-relaxed">
+            <p class="font-bold text-amber-300 mb-1">إخلاء مسؤولية أكاديمي:</p>
+            <p>
+              هذا الموقع مبادرة تعليمية وتوثيقية مخصصة لخدمة طلبة قسم هندسة النفط والغاز، ولا يُعتبر الموقع الرسمي المعتمد لرئاسة جامعة ذي قار ما لم يُنص على ذلك رسمياً.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div>
+          جميع الحقوق محفوظة © 2026 • قسم هندسة النفط والغاز - كلية الهندسة - جامعة ذي قار
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="#/about" class="hover:text-slate-300">عن المنصة</a>
+          <span>•</span>
+          <a href="#/contact" class="hover:text-slate-300">الاتصال بالقسم</a>
+          <span>•</span>
+          <button onclick="App.openAdminLoginModal()" class="hover:text-slate-300">بوابة الإدارة</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ====================================================================
+       MODAL 1: INTEGRATED PDF VIEWER MODAL
+  ==================================================================== -->
+  <div id="pdf-viewer-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-6">
+    <div class="pdf-modal-container bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      
+      <!-- Toolbar -->
+      <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex items-center justify-between text-white gap-4">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <h3 id="pdf-modal-title" class="text-xs sm:text-sm font-bold truncate">معاينة المستند</h3>
+            <p id="pdf-modal-size" class="text-xs text-slate-400 font-mono">PDF</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button 
+            onclick="App.downloadCurrentPdf()"
+            class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">تحميل PDF</span>
+          </button>
+
+          <button 
+            onclick="App.closePdfViewer()"
+            class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+            title="إغلاق (Esc)"
+          >
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PDF Embedded Viewport -->
+      <div id="pdf-modal-viewport" class="pdf-viewport">
+        <!-- يتم إدراج العنصر ديناميكياً بواسطة App.openPdfViewer() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 2: GLOBAL SEARCH MODAL
+  ==================================================================== -->
+  <div id="search-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-start justify-center p-4 sm:p-6 pt-16 sm:pt-24">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      
+      <!-- Search Input Header -->
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+        <i data-lucide="search" class="w-5 h-5 text-amber-500 shrink-0"></i>
+        <input 
+          type="text" 
+          id="global-search-input"
+          placeholder="ابحث عن مادة، كود (PGE)، محاضرة، أو مرحلة دراسية..." 
+          class="w-full bg-transparent border-none text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none text-sm text-right"
+          oninput="App.handleSearchInput(this.value)"
+        >
+        <button onclick="App.closeSearchModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Search Results Area -->
+      <div id="search-results-container" class="p-4 overflow-y-auto flex-1">
+        <div class="p-8 text-center text-slate-400 text-xs">
+          اكتب كلمة البحث للبحث في المقررات والمحاضرات...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 3: ADMIN LOGIN MODAL
+  ==================================================================== -->
+  <div id="admin-login-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
+      
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-blue-900 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-white">دخول إدارة المنصة التعليمية</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">مخصص لأساتذة ومسؤولي قسم هندسة النفط والغاز</p>
+      </div>
+
+      <form onsubmit="App.handleAdminLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اسم المستخدم</label>
+          <input 
+            type="text" 
+            id="admin-username-input" 
+            required 
+            placeholder="admin" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+          <input 
+            type="password" 
+            id="admin-password-input" 
+            required 
+            placeholder="••••••••" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+        </div>
+
+        <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs border border-amber-200 dark:border-amber-900/60">
+          <span class="font-bold">بيانات الدخول التجريبية:</span>
+          <span>admin / thiqar2026</span>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+          <button 
+            type="submit" 
+            class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm shadow-md transition-all active:scale-95"
+          >
+            تسجيل الدخول
+          </button>
+          <button 
+            type="button" 
+            onclick="App.closeModal('admin-login-modal')" 
+            class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 4: ADD / EDIT SUBJECT MODAL
+  ==================================================================== -->
+  <div id="subject-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-6">
+        <h3 id="subject-modal-title" class="text-base font-black text-slate-900 dark:text-white">إضافة مادة دراسية</h3>
+        <button onclick="App.closeModal('subject-modal')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="subject-form" onsubmit="App.handleSubjectFormSubmit(event)" class="space-y-4">
+        <input type="hidden" id="subject-id-input">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المرحلة والفصل الدراسي</label>
+          <select id="subject-semester-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <!-- يتم التعبئة ديناميكياً -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اسم المادة (الاسم الإنجليزي / المعتمد)</label>
+          <input 
+            type="text" 
+            id="subject-name-input" 
+            required 
+            placeholder="e.g. Reservoir Petrophysics" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربية (اختياري)</label>
+            <input 
+              type="text" 
+              id="subject-name-ar-input" 
+              placeholder="بتروفيزياء المكامن" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">رمز المادة الأكاديمي (Code)</label>
+            <input 
+              type="text" 
+              id="subject-code-input" 
+              placeholder="PGE214" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">وصف المادة وأهدافها</label>
+          <textarea 
+            id="subject-desc-input" 
+            rows="3" 
+            placeholder="مفردات المنهج والتطبيقات الهندسية..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button 
+            type="submit" 
+            class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+          >
+            حفظ المادة الدراسية
+          </button>
+          <button 
+            type="button" 
+            onclick="App.closeModal('subject-modal')" 
+            class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 5: UPLOAD LECTURE / MATERIAL MODAL
+  ==================================================================== -->
+  <div id="upload-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-6">
+        <div>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">رفع مستند أو محاضرة تعليمية</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">إضافة ملف PDF أو مستند للمادة الدراسية المحددة</p>
+        </div>
+        <button onclick="App.closeModal('upload-modal')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="upload-form" onsubmit="App.handleUploadFormSubmit(event)" class="space-y-4">
+        <input type="hidden" id="upload-file-data-url">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المادة الدراسية</label>
+            <select id="upload-subject-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <!-- يتم التعبئة ديناميكياً -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">القسم / نوع المستند</label>
+            <select 
+              id="upload-category-select" 
+              required 
+              onchange="App.toggleLectureNumberField(this.value)"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <!-- يتم التعبئة ديناميكياً -->
+            </select>
+          </div>
+        </div>
+
+        <!-- حقل رقم المحاضرة (خاص بقسم المحاضرات: Lecture 1, 2, 3...) -->
+        <div id="upload-lecture-num-container">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تسلسل المحاضرة (Lecture Number)</label>
+          <input 
+            type="number" 
+            id="upload-lecture-num-input" 
+            min="1" 
+            max="100" 
+            placeholder="1" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+          <p class="text-[10px] text-slate-400 mt-1">يُرتب المحاضرات تلقائياً كـ: Lecture 1, Lecture 2, Lecture 3...</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">عنوان المحاضرة أو المستند</label>
+          <input 
+            type="text" 
+            id="upload-title-input" 
+            required 
+            placeholder="مثال: Lecture 1: Physical Geology & Earth Structure" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">وصف مختصر (اختياري)</label>
+          <textarea 
+            id="upload-desc-input" 
+            rows="2" 
+            placeholder="شرح موجز لأهم النقاط والمفاهيم التي تغطيها هذه المحاضرة..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+          ></textarea>
+        </div>
+
+        <!-- منطقة السحب والإفلات لاختيار ملف من جهاز الكمبيوتر -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملف المستند (PDF أو Word)</label>
+          <div 
+            class="dropzone rounded-2xl p-6 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            onclick="document.getElementById('upload-file-input').click()"
+          >
+            <i data-lucide="cloud-upload" class="w-8 h-8 text-amber-500 mx-auto mb-2"></i>
+            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">اسحب وأفلت الملف هنا أو انقر لاختياره من جهازك</p>
+            <p id="upload-selected-file-label" class="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono">
+              لم يتم اختيار ملف بعد (أو سيتم استخدام ملف العينة الافتراضي)
+            </p>
+            <p class="text-[10px] text-slate-400 mt-1">يدعم ملفات PDF، DOCX، PPTX بحجم أقصى 50 ميغابايت</p>
+          </div>
+          <input 
+            type="file" 
+            id="upload-file-input" 
+            accept=".pdf,.doc,.docx,.ppt,.pptx" 
+            class="hidden" 
+            onchange="App.handleFileInputChange(this)"
+          >
+        </div>
+
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button 
+            type="submit" 
+            class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+          >
+            تأكيد الرفع والإضافة
+          </button>
+          <button 
+            type="button" 
+            onclick="App.closeModal('upload-modal')" 
+            class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       TOAST ALERTS CONTAINER
+  ==================================================================== -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

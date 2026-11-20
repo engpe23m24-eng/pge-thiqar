@@ -1,0 +1,301 @@
+/* ====================================================================
+   جامعة ذي قار - كلية الهندسة - قسم هندسة النفط والغاز
+   University of Thi-Qar - College of Engineering
+   Department of Petroleum & Gas Engineering
+   Custom Luxury Navy & Gold Theme Stylesheet
+==================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap');
+
+:root {
+  --font-main: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cairo', system-ui, sans-serif;
+
+  /* University Luxury Palette */
+  --navy-950: #050d1a;
+  --navy-900: #0a192f;
+  --navy-850: #0f2347;
+  --navy-800: #172a59;
+  --navy-700: #1e3a8a;
+  --navy-600: #2563eb;
+  
+  --gold-600: #b45309;
+  --gold-500: #d97706;
+  --gold-400: #f59e0b;
+  --gold-300: #fbbf24;
+  --gold-100: #fef3c7;
+  --gold-50:  #fffbeb;
+
+  --surface-light: #ffffff;
+  --bg-light: #f8fafc;
+  --border-light: #e2e8f0;
+
+  --surface-dark: #0f172a;
+  --bg-dark: #070e1b;
+  --border-dark: #1e293b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  direction: rtl;
+  text-align: right;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ====================================================================
+   Custom Scrollbar
+==================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ====================================================================
+   Glassmorphism & Gradients
+==================================================================== */
+.glass-header {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-header {
+  background: rgba(10, 25, 47, 0.88);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(30, 41, 59, 0.9);
+}
+
+/* Golden Accent Gradients */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .gold-gradient-text {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.navy-hero-gradient {
+  background: radial-gradient(circle at 80% 20%, #172a59 0%, #0f2347 40%, #0a192f 100%);
+}
+
+.dark .navy-hero-gradient {
+  background: radial-gradient(circle at 80% 20%, #1e3a8a 0%, #0f2347 45%, #050d1a 100%);
+}
+
+/* ====================================================================
+   Card Hover Animations
+==================================================================== */
+.academic-card {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.academic-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px -8px rgba(15, 35, 71, 0.12), 0 4px 12px -2px rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+.dark .academic-card:hover {
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* ====================================================================
+   Stage Cards (Homepage)
+==================================================================== */
+.stage-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stage-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #d97706, #1e3a8a);
+  opacity: 0.8;
+  transition: height 0.25s ease;
+}
+
+.stage-card:hover::before {
+  height: 6px;
+}
+
+.stage-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -12px rgba(15, 35, 71, 0.18);
+}
+
+.dark .stage-card:hover {
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* ====================================================================
+   Integrated PDF Viewer Styles
+==================================================================== */
+.pdf-modal-container {
+  max-width: 1100px;
+  width: 95vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-viewport {
+  flex: 1;
+  width: 100%;
+  background: #525659;
+  border-radius: 0 0 1rem 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.pdf-viewport iframe, 
+.pdf-viewport object, 
+.pdf-viewport embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ====================================================================
+   Drag & Drop Upload Zone
+==================================================================== */
+.dropzone {
+  border: 2px dashed #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.dropzone.dragover {
+  border-color: #d97706;
+  background-color: rgba(254, 243, 199, 0.3);
+}
+
+.dark .dropzone {
+  border-color: #334155;
+}
+
+.dark .dropzone.dragover {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+/* ====================================================================
+   Tab Navigation Styles
+==================================================================== */
+.tab-btn {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab-btn.active {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+  border-color: #3b82f6;
+}
+
+.dark .tab-btn.active {
+  color: #fbbf24;
+  background: rgba(30, 58, 138, 0.3);
+  border-color: #f59e0b;
+}
+
+/* ====================================================================
+   Toast Alerts
+==================================================================== */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toast {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  min-width: 300px;
+  max-width: 420px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ====================================================================
+   Print Styles
+==================================================================== */
+@media print {
+  header, footer, .no-print, #toast-container, button {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
