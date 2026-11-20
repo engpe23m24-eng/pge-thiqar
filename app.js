@@ -693,10 +693,10 @@ const App = {
                 <i data-lucide="folder-open" class="w-8 h-8"></i>
               </div>
               <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">
-                ${this.activeCategoryTab === 'lectures' ? 'لا توجد محاضرات مضافة حالياً' : 'لا توجد ملفات مضافة في هذا القسم حالياً'}
+                ${this.activeCategoryTab === 'lectures' ? 'لا توجد فيديوهات YouTube مضافة حالياً' : 'لا توجد ملفات مضافة في هذا القسم حالياً'}
               </h3>
               <p class="text-xs text-slate-500 dark:text-slate-400">
-                سيتم رفع وتحديث الملفات والمصادر التعليمية من قبل أساتذة المادة.
+                ${this.activeCategoryTab === 'lectures' ? 'سيتم إضافة شروحات وفيديوهات YouTube التعليمية من قبل أساتذة المادة.' : 'سيتم رفع وتحديث الملفات والمصادر التعليمية من قبل أساتذة المادة.'}
               </p>
               ${window.academicDB.isLoggedIn() ? `
                 <button 
@@ -720,13 +720,13 @@ const App = {
                     <div>
                       <div class="flex items-start justify-between gap-3 mb-2">
                         <div class="flex items-center gap-2">
-                          <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-200 dark:border-red-900">
-                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                          <div class="w-10 h-10 rounded-xl ${isLecture ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'} flex items-center justify-center shrink-0">
+                            <i data-lucide="${isLecture ? 'youtube' : 'file-text'}" class="w-5 h-5"></i>
                           </div>
                           <div>
                             ${lectureBadge ? `
-                              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300">
-                                ${lectureBadge}
+                              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded ${isLecture ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'}">
+                                ${isLecture ? `YouTube • ${lectureBadge}` : lectureBadge}
                               </span>
                             ` : `
                               <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
