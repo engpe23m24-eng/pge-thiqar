@@ -561,6 +561,195 @@
   ==================================================================== -->
   <div id="toast-container"></div>
 
+
+  <!-- ====================================================================
+       RATING MODAL - نافذة تقييم الموقع
+  ==================================================================== -->
+  <!-- Floating Rating Button -->
+  <button id="rating-fab" onclick="RatingSystem.open()"
+    title="قيّم الموقع"
+    class="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+    style="background:linear-gradient(135deg,#d97706,#f59e0b);">
+    <i data-lucide="star" class="w-6 h-6 text-white fill-white"></i>
+  </button>
+
+  <!-- Rating Modal Backdrop -->
+  <div id="rating-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="RatingSystem.close()"></div>
+    <div class="relative w-full max-w-md glass-card rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <!-- Header -->
+      <div class="navy-hero-gradient p-6 text-center relative">
+        <button onclick="RatingSystem.close()" class="absolute top-4 left-4 text-white/70 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="star" class="w-8 h-8 text-amber-400 fill-amber-400"></i>
+        </div>
+        <h2 class="text-xl font-black text-white">قيّم المنصة التعليمية</h2>
+        <p class="text-slate-300 text-sm mt-1">رأيك يساعدنا على التحسين المستمر</p>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6">
+        <!-- Stars -->
+        <div class="text-center mb-6">
+          <p class="text-sm font-bold text-slate-600 dark:text-slate-400 mb-3">ما تقييمك للمنصة؟</p>
+          <div id="rating-stars" class="flex justify-center gap-2">
+            <button onclick="RatingSystem.setRating(5)" onmouseover="RatingSystem.hoverRating(5)" onmouseout="RatingSystem.hoverRating(0)" data-star="5" class="rating-star transition-transform hover:scale-110">
+              <i data-lucide="star" class="w-10 h-10 text-slate-300 dark:text-slate-600 transition-colors star-icon"></i>
+            </button>
+            <button onclick="RatingSystem.setRating(4)" onmouseover="RatingSystem.hoverRating(4)" onmouseout="RatingSystem.hoverRating(0)" data-star="4" class="rating-star transition-transform hover:scale-110">
+              <i data-lucide="star" class="w-10 h-10 text-slate-300 dark:text-slate-600 transition-colors star-icon"></i>
+            </button>
+            <button onclick="RatingSystem.setRating(3)" onmouseover="RatingSystem.hoverRating(3)" onmouseout="RatingSystem.hoverRating(0)" data-star="3" class="rating-star transition-transform hover:scale-110">
+              <i data-lucide="star" class="w-10 h-10 text-slate-300 dark:text-slate-600 transition-colors star-icon"></i>
+            </button>
+            <button onclick="RatingSystem.setRating(2)" onmouseover="RatingSystem.hoverRating(2)" onmouseout="RatingSystem.hoverRating(0)" data-star="2" class="rating-star transition-transform hover:scale-110">
+              <i data-lucide="star" class="w-10 h-10 text-slate-300 dark:text-slate-600 transition-colors star-icon"></i>
+            </button>
+            <button onclick="RatingSystem.setRating(1)" onmouseover="RatingSystem.hoverRating(1)" onmouseout="RatingSystem.hoverRating(0)" data-star="1" class="rating-star transition-transform hover:scale-110">
+              <i data-lucide="star" class="w-10 h-10 text-slate-300 dark:text-slate-600 transition-colors star-icon"></i>
+            </button>
+          </div>
+          <p id="rating-label" class="text-sm font-bold text-amber-600 dark:text-amber-400 mt-2 h-5"></p>
+        </div>
+
+        <!-- Comment -->
+        <div class="mb-5">
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+            تعليق (اختياري)
+          </label>
+          <textarea id="rating-comment" rows="3" placeholder="شاركنا رأيك أو اقتراحاتك..."
+            class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"></textarea>
+        </div>
+
+        <!-- Submit -->
+        <button onclick="RatingSystem.submit()"
+          class="w-full py-3 rounded-xl font-black text-white text-sm shadow-lg transition-all hover:scale-105 active:scale-95"
+          style="background:linear-gradient(135deg,#0a192f,#0f2347);">
+          <span class="flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            إرسال التقييم
+          </span>
+        </button>
+
+        <!-- Previous rating display -->
+        <div id="rating-previous" class="hidden mt-4 p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-center">
+          <p class="text-xs text-green-700 dark:text-green-400 font-bold">✅ شكراً! سبق وقيّمت المنصة</p>
+          <div id="rating-previous-stars" class="flex justify-center gap-1 mt-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rating Success Toast (custom) -->
+  <div id="rating-success-toast" class="fixed bottom-24 left-6 z-50 hidden">
+    <div class="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-white font-bold text-sm"
+         style="background:linear-gradient(135deg,#059669,#10b981);">
+      <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+      <span>شكراً على تقييمك! 🌟</span>
+    </div>
+  </div>
+
+  <script>
+  const RatingSystem = {
+    currentRating: 0,
+    labels: ['', 'ضعيف', 'مقبول', 'جيد', 'جيد جداً', 'ممتاز! 🌟'],
+
+    open() {
+      const modal = document.getElementById('rating-modal');
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      lucide.createIcons();
+      // Check previous rating
+      const saved = JSON.parse(localStorage.getItem('pge_site_rating') || 'null');
+      if (saved) {
+        this.currentRating = saved.rating;
+        this.updateStars(saved.rating);
+        document.getElementById('rating-comment').value = saved.comment || '';
+        document.getElementById('rating-label').textContent = this.labels[saved.rating];
+        document.getElementById('rating-previous').classList.remove('hidden');
+        this.renderMiniStars('rating-previous-stars', saved.rating);
+      }
+    },
+
+    close() {
+      document.getElementById('rating-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    },
+
+    setRating(n) {
+      this.currentRating = n;
+      this.updateStars(n);
+      document.getElementById('rating-label').textContent = this.labels[n];
+    },
+
+    hoverRating(n) {
+      if (n === 0) {
+        this.updateStars(this.currentRating);
+        document.getElementById('rating-label').textContent = this.currentRating ? this.labels[this.currentRating] : '';
+      } else {
+        this.updateStars(n);
+        document.getElementById('rating-label').textContent = this.labels[n];
+      }
+    },
+
+    updateStars(n) {
+      // Stars are ordered 5-4-3-2-1 in RTL, so we need to handle direction
+      // We display 5 stars, fill those <= n (from star perspective: star 5,4,3,2,1)
+      // A star button with data-star="X" should be filled if X <= n
+      document.querySelectorAll('.rating-star').forEach(btn => {
+        const starVal = parseInt(btn.dataset.star);
+        const icon = btn.querySelector('.star-icon');
+        if (starVal <= n) {
+          icon.style.color = '#f59e0b';
+          icon.setAttribute('fill', '#f59e0b');
+          icon.style.fill = '#f59e0b';
+        } else {
+          icon.style.color = '';
+          icon.style.fill = '';
+          icon.removeAttribute('fill');
+          icon.classList.add('text-slate-300');
+        }
+      });
+    },
+
+    renderMiniStars(containerId, n) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const s = document.createElement('span');
+        s.textContent = '★';
+        s.style.fontSize = '16px';
+        s.style.color = i <= n ? '#f59e0b' : '#d1d5db';
+        el.appendChild(s);
+      }
+    },
+
+    submit() {
+      if (!this.currentRating) {
+        document.getElementById('rating-label').textContent = '⚠️ يرجى اختيار تقييم أولاً';
+        document.getElementById('rating-label').style.color = '#ef4444';
+        setTimeout(() => {
+          document.getElementById('rating-label').style.color = '';
+          document.getElementById('rating-label').textContent = '';
+        }, 2000);
+        return;
+      }
+      const comment = document.getElementById('rating-comment').value.trim();
+      const data = { rating: this.currentRating, comment, date: new Date().toISOString() };
+      localStorage.setItem('pge_site_rating', JSON.stringify(data));
+      this.close();
+      // Show success toast
+      const toast = document.getElementById('rating-success-toast');
+      toast.classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+  };
+  </script>
+
   <!-- Scripts -->
   <script src="data.js"></script>
   <script src="supabase-client.js"></script>
