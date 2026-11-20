@@ -266,6 +266,40 @@
   </div>
 
   <!-- ====================================================================
+       MODAL 1.5: YOUTUBE VIDEO PLAYER MODAL
+  ==================================================================== -->
+  <div id="video-player-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-6">
+    <div class="relative w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-white gap-4">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="youtube" class="w-4 h-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <h3 id="video-modal-title" class="text-xs sm:text-sm font-bold truncate">مشاهدة الفيديو التعليمي</h3>
+            <p class="text-[10px] text-slate-400">قسم هندسة النفط والغاز • YouTube Video</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <a id="video-modal-yt-link" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm">
+            <span>فتح في YouTube</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="App.closeVideoModal()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div class="relative aspect-video w-full bg-black">
+        <iframe id="video-modal-iframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <div class="p-4 bg-slate-950/60 border-t border-slate-800">
+        <p id="video-modal-desc" class="text-xs text-slate-300 leading-relaxed"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
        MODAL 2: GLOBAL SEARCH MODAL
   ==================================================================== -->
   <div id="search-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-start justify-center p-4 sm:p-6 pt-16 sm:pt-24">
@@ -475,9 +509,9 @@
           </div>
         </div>
 
-        <!-- حقل رقم المحاضرة (خاص بقسم المحاضرات: Lecture 1, 2, 3...) -->
+        <!-- حقل رقم المحاضرة / تسلسل الفيديو -->
         <div id="upload-lecture-num-container">
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تسلسل المحاضرة (Lecture Number)</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تسلسل الفيديو أو المحاضرة (Part / Video #)</label>
           <input 
             type="number" 
             id="upload-lecture-num-input" 
@@ -486,7 +520,22 @@
             placeholder="1" 
             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
-          <p class="text-[10px] text-slate-400 mt-1">يُرتب المحاضرات تلقائياً كـ: Lecture 1, Lecture 2, Lecture 3...</p>
+          <p class="text-[10px] text-slate-400 mt-1">يُرتب المحاضرات تلقائياً كـ: Video 1, Video 2, Video 3...</p>
+        </div>
+
+        <!-- حقل رابط فيديو YouTube -->
+        <div id="upload-youtube-url-container">
+          <label class="block text-xs font-bold text-red-600 dark:text-red-400 mb-1 flex items-center gap-1.5">
+            <i data-lucide="youtube" class="w-4 h-4"></i>
+            <span>رابط فيديو YouTube</span>
+          </label>
+          <input 
+            type="url" 
+            id="upload-youtube-url-input" 
+            placeholder="مثال: https://www.youtube.com/watch?v=... أو https://youtu.be/..." 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/40 dark:bg-red-950/20 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+          <p class="text-[10px] text-slate-400 mt-1">انسخ رابط الفيديو من يوتيوب وضعه هنا</p>
         </div>
 
         <div>
@@ -511,7 +560,7 @@
         </div>
 
         <!-- منطقة السحب والإفلات لاختيار ملف من جهاز الكمبيوتر -->
-        <div>
+        <div id="upload-file-dropzone-container">
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملف المستند (PDF أو Word)</label>
           <div 
             class="dropzone rounded-2xl p-6 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -747,8 +796,8 @@
   </script>
 
   <!-- Scripts -->
-  <script src="data.js?v=2.0"></script>
-  <script src="supabase-client.js?v=2.0"></script>
-  <script src="app.js?v=2.0"></script>
+  <script src="data.js?v=3.0"></script>
+  <script src="supabase-client.js?v=3.0"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>

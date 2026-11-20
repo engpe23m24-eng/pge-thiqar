@@ -196,6 +196,7 @@ class AcademicDataManager {
       file_name: materialData.file_name || 'document.pdf',
       file_size: materialData.file_size || '1.5 MB',
       file_type: materialData.file_type || 'application/pdf',
+      youtube_url: materialData.youtube_url || null,
       file_data_url: materialData.file_data_url || null, // دعم المعاينة المباشرة للملفات المرفوعة من الجهاز
       lecture_number: materialData.lecture_number ? Number(materialData.lecture_number) : null,
       upload_date: new Date().toISOString().split('T')[0],

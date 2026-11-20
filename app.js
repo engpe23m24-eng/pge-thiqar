@@ -692,20 +692,50 @@ const App = {
           </div>
         </div>
 
+        <!-- شريط الإجراءات لقسم فيديوهات YouTube -->
+        ${this.activeCategoryTab === 'lectures' ? `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 p-4 rounded-2xl bg-red-50/70 dark:bg-red-950/25 border border-red-200/80 dark:border-red-900/40">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <i data-lucide="youtube" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">فيديوهات وشروحات YouTube</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">يمكنك مشاهدة الفيديوهات مباشرة من المنصة أو فتحها على YouTube</p>
+              </div>
+            </div>
+            <button 
+              onclick="App.openUploadModal('${subject.id}', 'lectures')"
+              class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 shrink-0"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>إضافة رابط فيديو YouTube</span>
+            </button>
+          </div>
+        ` : ''}
+
         <!-- محتوى القسم المحدد -->
         <div>
           ${materials.length === 0 ? `
             <div class="glass-card rounded-3xl p-12 text-center border border-dashed border-slate-300 dark:border-slate-700 max-w-lg mx-auto my-8">
               <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                <i data-lucide="folder-open" class="w-8 h-8"></i>
+                <i data-lucide="${this.activeCategoryTab === 'lectures' ? 'youtube' : 'folder-open'}" class="w-8 h-8 ${this.activeCategoryTab === 'lectures' ? 'text-red-500' : ''}"></i>
               </div>
               <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">
                 ${this.activeCategoryTab === 'lectures' ? 'لا توجد فيديوهات YouTube مضافة حالياً' : 'لا توجد ملفات مضافة في هذا القسم حالياً'}
               </h3>
               <p class="text-xs text-slate-500 dark:text-slate-400">
-                ${this.activeCategoryTab === 'lectures' ? 'سيتم إضافة شروحات وفيديوهات YouTube التعليمية من قبل أساتذة المادة.' : 'سيتم رفع وتحديث الملفات والمصادر التعليمية من قبل أساتذة المادة.'}
+                ${this.activeCategoryTab === 'lectures' ? 'اضغط على زر إضافة فيديو YouTube لوضع رابط المحاضرة أو الشرح التعليمي.' : 'سيتم رفع وتحديث الملفات والمصادر التعليمية من قبل أساتذة المادة.'}
               </p>
-              ${window.academicDB.isLoggedIn() ? `
+              ${this.activeCategoryTab === 'lectures' ? `
+                <button 
+                  onclick="App.openUploadModal('${subject.id}', 'lectures')"
+                  class="mt-4 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center gap-2 active:scale-95"
+                >
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>إضافة أول فيديو YouTube لهذه المادة</span>
+                </button>
+              ` : (window.academicDB.isLoggedIn() ? `
                 <button 
                   onclick="App.openUploadModal('${subject.id}', '${this.activeCategoryTab}')"
                   class="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 transition-all inline-flex items-center gap-1.5"
@@ -713,34 +743,56 @@ const App = {
                   <i data-lucide="plus" class="w-4 h-4"></i>
                   <span>رفع أول مستند في هذا القسم</span>
                 </button>
-              ` : ''}
+              ` : '')}
             </div>
           ` : `
-            <!-- قائمة المستندات والمحاضرات المنظمة -->
+            <!-- قائمة المستندات والمحاضرات والفيديوهات -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               ${materials.map((mat, idx) => {
                 const isLecture = mat.category === 'lectures';
-                const lectureBadge = mat.lecture_number ? `Lecture ${mat.lecture_number}` : (isLecture ? `Lecture ${idx + 1}` : null);
+                const isYt = Boolean(mat.youtube_url) || isLecture;
+                const ytId = mat.youtube_url ? App.getYouTubeId(mat.youtube_url) : null;
+                const lectureBadge = mat.lecture_number ? `Part ${mat.lecture_number}` : (isLecture ? `Video ${idx + 1}` : null);
 
                 return `
                   <div class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-all flex flex-col justify-between group">
                     <div>
+                      ${ytId ? `
+                        <!-- معاينة وصورة مصغرة لفيديو YouTube -->
+                        <div 
+                          onclick="App.openVideoModal('${mat.id}')"
+                          class="relative w-full aspect-video rounded-xl overflow-hidden mb-3.5 bg-black cursor-pointer group/thumb border border-slate-700/60 shadow-sm"
+                        >
+                          <img 
+                            src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" 
+                            alt="${mat.title}"
+                            class="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          >
+                          <div class="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/10 transition-colors flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover/thumb:scale-110 transition-transform">
+                              <i data-lucide="play" class="w-6 h-6 fill-white"></i>
+                            </div>
+                          </div>
+                        </div>
+                      ` : ''}
+
                       <div class="flex items-start justify-between gap-3 mb-2">
                         <div class="flex items-center gap-2">
-                          <div class="w-10 h-10 rounded-xl ${isLecture ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'} flex items-center justify-center shrink-0">
-                            <i data-lucide="${isLecture ? 'youtube' : 'file-text'}" class="w-5 h-5"></i>
+                          <div class="w-10 h-10 rounded-xl ${isYt ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'} flex items-center justify-center shrink-0">
+                            <i data-lucide="${isYt ? 'youtube' : 'file-text'}" class="w-5 h-5"></i>
                           </div>
                           <div>
                             ${lectureBadge ? `
-                              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded ${isLecture ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'}">
-                                ${isLecture ? `YouTube • ${lectureBadge}` : lectureBadge}
+                              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded ${isYt ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'}">
+                                ${isYt ? `YouTube • ${lectureBadge}` : lectureBadge}
                               </span>
                             ` : `
                               <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                مستند دراسي
+                                ${isYt ? 'فيديو YouTube' : 'مستند دراسي'}
                               </span>
                             `}
-                            <span class="text-xs text-slate-400 mr-2">${mat.file_size || 'PDF'}</span>
+                            <span class="text-xs text-slate-400 mr-2">${mat.file_size || (isYt ? 'YouTube' : 'PDF')}</span>
                           </div>
                         </div>
 
@@ -755,16 +807,9 @@ const App = {
                               <i data-lucide="edit" class="w-3.5 h-3.5"></i>
                             </button>
                             <button 
-                              onclick="App.openReplaceFileModal('${mat.id}')"
-                              class="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                              title="استبدال الملف"
-                            >
-                              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button 
                               onclick="App.deleteMaterialPrompt('${mat.id}', '${subject.id}')"
                               class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                              title="حذف المستند"
+                              title="حذف"
                             >
                               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
@@ -788,28 +833,49 @@ const App = {
                           <span>${mat.upload_date || '2026-10-01'}</span>
                         </span>
                         <span>•</span>
-                        <span class="font-mono">${mat.file_name || 'document.pdf'}</span>
+                        <span class="font-mono">${mat.youtube_url ? 'YouTube Video' : (mat.file_name || 'document.pdf')}</span>
                       </div>
                     </div>
 
-                    <!-- أزرار المعاينة والتحميل -->
+                    <!-- أزرار المشاهدة أو التحميل -->
                     <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
-                      <button 
-                        onclick="App.openPdfViewer('${mat.id}')"
-                        class="flex-1 py-2 rounded-xl bg-blue-900 dark:bg-blue-800 hover:bg-blue-800 dark:hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                      >
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                        <span>قراءة المستند</span>
-                      </button>
+                      ${mat.youtube_url ? `
+                        <button 
+                          onclick="App.openVideoModal('${mat.id}')"
+                          class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95"
+                        >
+                          <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+                          <span>مشاهدة الفيديو</span>
+                        </button>
 
-                      <button 
-                        onclick="App.downloadPdf('${mat.id}')"
-                        class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                        title="تحميل ملف PDF"
-                      >
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span class="hidden sm:inline">تحميل</span>
-                      </button>
+                        <a 
+                          href="${mat.youtube_url}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                          title="فتح في YouTube"
+                        >
+                          <i data-lucide="external-link" class="w-4 h-4"></i>
+                          <span class="hidden sm:inline">YouTube</span>
+                        </a>
+                      ` : `
+                        <button 
+                          onclick="App.openPdfViewer('${mat.id}')"
+                          class="flex-1 py-2 rounded-xl bg-blue-900 dark:bg-blue-800 hover:bg-blue-800 dark:hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <i data-lucide="eye" class="w-4 h-4"></i>
+                          <span>قراءة المستند</span>
+                        </button>
+
+                        <button 
+                          onclick="App.downloadPdf('${mat.id}')"
+                          class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                          title="تحميل ملف PDF"
+                        >
+                          <i data-lucide="download" class="w-4 h-4"></i>
+                          <span class="hidden sm:inline">تحميل</span>
+                        </button>
+                      `}
                     </div>
                   </div>
                 `;
@@ -1617,13 +1683,62 @@ const App = {
   },
 
   toggleLectureNumberField(category) {
-    const container = document.getElementById('upload-lecture-num-container');
-    if (container) {
-      if (category === 'lectures') {
-        container.classList.remove('hidden');
-      } else {
-        container.classList.add('hidden');
-      }
+    const numContainer = document.getElementById('upload-lecture-num-container');
+    const ytContainer = document.getElementById('upload-youtube-url-container');
+    const dropzoneContainer = document.getElementById('upload-file-dropzone-container');
+    const titleInput = document.getElementById('upload-title-input');
+
+    if (category === 'lectures') {
+      if (numContainer) numContainer.classList.remove('hidden');
+      if (ytContainer) ytContainer.classList.remove('hidden');
+      if (dropzoneContainer) dropzoneContainer.classList.add('hidden');
+      if (titleInput) titleInput.placeholder = "مثال: Lecture 1: Petroleum Refining Introduction";
+    } else {
+      if (numContainer) numContainer.classList.add('hidden');
+      if (ytContainer) ytContainer.classList.add('hidden');
+      if (dropzoneContainer) dropzoneContainer.classList.remove('hidden');
+      if (titleInput) titleInput.placeholder = "مثال: ملزمة الفصل الأول - المحاضرات المعتمدة";
+    }
+    this.refreshIcons();
+  },
+
+  getYouTubeId(url) {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    return match ? match[1] : null;
+  },
+
+  openVideoModal(materialId) {
+    const mat = window.academicDB.getMaterialById(materialId);
+    if (!mat || !mat.youtube_url) return;
+    const ytId = this.getYouTubeId(mat.youtube_url);
+    const modal = document.getElementById('video-player-modal');
+    const iframe = document.getElementById('video-modal-iframe');
+    const title = document.getElementById('video-modal-title');
+    const desc = document.getElementById('video-modal-desc');
+    const link = document.getElementById('video-modal-yt-link');
+
+    if (title) title.textContent = mat.title;
+    if (desc) desc.textContent = mat.description || 'فيديو تعليمي معتمد لقسم هندسة النفط والغاز';
+    if (link) link.href = mat.youtube_url;
+    if (iframe) {
+      iframe.src = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1` : mat.youtube_url;
+    }
+
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    this.refreshIcons();
+  },
+
+  closeVideoModal() {
+    const modal = document.getElementById('video-player-modal');
+    const iframe = document.getElementById('video-modal-iframe');
+    if (iframe) iframe.src = '';
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
   },
 
@@ -1664,15 +1779,22 @@ const App = {
     const title = document.getElementById('upload-title-input').value;
     const description = document.getElementById('upload-desc-input').value;
     const lectureNum = document.getElementById('upload-lecture-num-input').value;
+    const youtubeUrl = document.getElementById('upload-youtube-url-input')?.value || '';
     const fileDataUrl = document.getElementById('upload-file-data-url').value;
     const fileInput = document.getElementById('upload-file-input');
 
     const file = fileInput.files[0];
-    const fileName = file ? file.name : 'document.pdf';
-    const fileSize = file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '2.0 MB';
+    const isYt = category === 'lectures' && Boolean(youtubeUrl.trim());
+    const fileName = isYt ? 'YouTube Video' : (file ? file.name : 'document.pdf');
+    const fileSize = isYt ? 'YouTube' : (file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '2.0 MB');
 
     if (!title.trim() || !subjectId) {
-      this.showToast('يرجى كتابة عنوان للمستند واختيار المادة', 'error');
+      this.showToast('يرجى كتابة عنوان واختيار المادة', 'error');
+      return;
+    }
+
+    if (category === 'lectures' && !youtubeUrl.trim() && !file) {
+      this.showToast('يرجى وضع رابط فيديو YouTube أو اختيار ملف', 'error');
       return;
     }
 
@@ -1681,13 +1803,14 @@ const App = {
       category: category,
       title: title.trim(),
       description: description.trim(),
+      youtube_url: youtubeUrl.trim() || null,
       file_name: fileName,
       file_size: fileSize,
       file_data_url: fileDataUrl || null,
       lecture_number: category === 'lectures' && lectureNum ? Number(lectureNum) : null
     });
 
-    this.showToast('تم رفع المستند الدراسي بنجاح!', 'success');
+    this.showToast(isYt ? 'تمت إضافة فيديو YouTube بنجاح!' : 'تم رفع المستند الدراسي بنجاح!', 'success');
     this.closeModal('upload-modal');
     this.renderCurrentView();
   },

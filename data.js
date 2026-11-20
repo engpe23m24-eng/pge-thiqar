@@ -679,6 +679,7 @@ const INITIAL_ACADEMIC_DATA = {
       file_size: "2.4 MB",
       file_type: "application/pdf",
       upload_date: "2026-10-10",
+      youtube_url: "https://www.youtube.com/watch?v=j1c0KzJ8x6A",
       lecture_number: 1
     },
     {
