@@ -751,10 +751,12 @@ const App = {
                 </button>
                 <button 
                   onclick="App.openEditSubjectModal('${subject.id}')"
-                  class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                  class="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all inline-flex items-center gap-2"
                   title="تعديل بيانات المادة"
+                  aria-label="تعديل بيانات المادة"
                 >
                   <i data-lucide="edit-3" class="w-4 h-4"></i>
+                  <span>تعديل المادة</span>
                 </button>
               ` : ''}
             </div>
@@ -1541,8 +1543,8 @@ const App = {
             </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-right text-xs">
+          <div class="overflow-x-auto hidden md:block">
+            <table class="w-full min-w-[760px] text-right text-xs">
               <thead class="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th class="p-3.5">الكود</th>
@@ -1584,17 +1586,21 @@ const App = {
                           </button>
                           <button 
                             onclick="App.openEditSubjectModal('${sub.id}')"
-                            class="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
+                            class="px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 font-bold inline-flex items-center gap-1.5 whitespace-nowrap"
                             title="تعديل المادة"
+                            aria-label="تعديل المادة ${this.escapeHtml(sub.name)}"
                           >
-                            <i data-lucide="edit" class="w-4 h-4"></i>
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>تعديل</span>
                           </button>
                           <button 
                             onclick="App.deleteSubjectPrompt('${sub.id}')"
-                            class="p-1.5 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                            class="px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-500/20 font-bold inline-flex items-center gap-1.5 whitespace-nowrap"
                             title="حذف المادة"
+                            aria-label="حذف المادة ${this.escapeHtml(sub.name)}"
                           >
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>حذف</span>
                           </button>
                         </div>
                       </td>
@@ -1603,6 +1609,40 @@ const App = {
                 }).join('')}
               </tbody>
             </table>
+          </div>
+          <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            ${window.academicDB.data.subjects.map(sub => {
+              const subjectName = this.escapeHtml(sub.name || 'مادة دراسية');
+              const subjectCode = this.escapeHtml(sub.code || 'PGE');
+              const semester = window.academicDB.getSemesterById(sub.semester_id);
+              const year = semester ? window.academicDB.getYearById(semester.year_id) : null;
+              const semesterName = this.escapeHtml(semester ? semester.name_ar : '-');
+              const yearName = this.escapeHtml(year ? year.name_ar : '-');
+              const materialsCount = window.academicDB.getMaterialsBySubject(sub.id).length;
+
+              return `
+                <article class="p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <h4 class="font-black text-slate-900 dark:text-white">${subjectName}</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${subjectCode} · ${yearName} · ${semesterName}</p>
+                    </div>
+                    <span class="shrink-0 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px]">${materialsCount} مستند</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="App.openEditSubjectModal('${sub.id}')" class="min-h-10 px-3 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs inline-flex items-center justify-center gap-2" aria-label="تعديل المادة ${subjectName}">
+                      <i data-lucide="edit" class="w-4 h-4"></i><span>تعديل المادة</span>
+                    </button>
+                    <button type="button" onclick="App.deleteSubjectPrompt('${sub.id}')" class="min-h-10 px-3 py-2 rounded-xl bg-red-600 text-white font-bold text-xs inline-flex items-center justify-center gap-2" aria-label="حذف المادة ${subjectName}">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i><span>حذف المادة</span>
+                    </button>
+                    <button type="button" onclick="App.openUploadModal('${sub.id}')" class="col-span-2 min-h-10 px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center justify-center gap-2">
+                      <i data-lucide="upload" class="w-4 h-4"></i><span>رفع محاضرة أو مستند</span>
+                    </button>
+                  </div>
+                </article>
+              `;
+            }).join('')}
           </div>
         </div>
 
@@ -1627,7 +1667,7 @@ const App = {
               <span class="shrink-0 px-2.5 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-bold">${adminMaterials.length}</span>
             </div>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto hidden md:block">
             <table class="w-full min-w-[760px] text-right text-xs">
               <thead class="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -1656,11 +1696,13 @@ const App = {
                       <td class="p-3.5 max-w-xs truncate text-slate-500 dark:text-slate-400" title="${fileName}">${fileName}</td>
                       <td class="p-3.5 text-center">
                         <div class="inline-flex items-center gap-1.5">
-                          <button type="button" data-material-id="${safeId}" onclick="App.openEditMaterialModal(this.dataset.materialId)" class="p-2 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" title="تعديل بيانات المحاضرة أو المستند" aria-label="تعديل ${materialTitle}">
-                            <i data-lucide="edit" class="w-4 h-4"></i>
+                          <button type="button" data-material-id="${safeId}" onclick="App.openEditMaterialModal(this.dataset.materialId)" class="px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 font-bold inline-flex items-center gap-1.5 whitespace-nowrap" title="تعديل بيانات المحاضرة أو المستند" aria-label="تعديل ${materialTitle}">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>تعديل</span>
                           </button>
-                          <button type="button" data-material-id="${safeId}" onclick="App.deleteMaterialPrompt(this.dataset.materialId)" class="p-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20" title="حذف من المنصة" aria-label="حذف ${materialTitle}">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                          <button type="button" data-material-id="${safeId}" onclick="App.deleteMaterialPrompt(this.dataset.materialId)" class="px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-500/20 font-bold inline-flex items-center gap-1.5 whitespace-nowrap" title="حذف من المنصة" aria-label="حذف ${materialTitle}">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>حذف</span>
                           </button>
                         </div>
                       </td>
@@ -1671,6 +1713,35 @@ const App = {
                 `}
               </tbody>
             </table>
+          </div>
+          <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            ${adminMaterials.length ? adminMaterials.map(mat => {
+              const subject = window.academicDB.getSubjectById(mat.subject_id);
+              const materialTitle = this.escapeHtml(mat.title || 'بدون عنوان');
+              const subjectName = this.escapeHtml(subject ? subject.name : 'مادة غير معروفة');
+              const category = MATERIAL_CATEGORIES.find(item => item.id === mat.category);
+              const categoryName = this.escapeHtml(category ? category.label_ar : mat.category || 'غير مصنف');
+              const safeId = this.escapeHtml(mat.id);
+
+              return `
+                <article class="p-4 space-y-3">
+                  <div class="min-w-0">
+                    <h4 class="font-black text-slate-900 dark:text-white">${materialTitle}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${subjectName} · ${categoryName}</p>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button type="button" data-material-id="${safeId}" onclick="App.openEditMaterialModal(this.dataset.materialId)" class="min-h-10 px-3 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs inline-flex items-center justify-center gap-2" aria-label="تعديل ${materialTitle}">
+                      <i data-lucide="edit" class="w-4 h-4"></i><span>تعديل</span>
+                    </button>
+                    <button type="button" data-material-id="${safeId}" onclick="App.deleteMaterialPrompt(this.dataset.materialId)" class="min-h-10 px-3 py-2 rounded-xl bg-red-600 text-white font-bold text-xs inline-flex items-center justify-center gap-2" aria-label="حذف ${materialTitle}">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i><span>حذف</span>
+                    </button>
+                  </div>
+                </article>
+              `;
+            }).join('') : `
+              <p class="p-8 text-center text-slate-500 dark:text-slate-400">لا توجد محاضرات أو مستندات مضافة حالياً.</p>
+            `}
           </div>
           <p class="px-5 pb-4 text-[11px] text-slate-400">الحذف يزيل سجل المستند من المنصة؛ ملف التخزين الأصلي لا يُحذف تلقائياً.</p>
         </div>
