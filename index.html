@@ -40,7 +40,7 @@
   <meta name="short_name" content="PGE-ThiQar">
 
   <!-- Custom Stylesheet with Luxury Navy & Gold Palette -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=7.0">
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
 
@@ -48,50 +48,59 @@
        TOP NAVIGATION BAR
   ==================================================================== -->
   <header class="sticky top-0 z-40 glass-header shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Logo Placeholder & University Brand Title -->
-      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="App.navigateTo('home')">
+      <a href="#/" aria-label="العودة إلى الصفحة الرئيسية" class="flex items-center gap-2 sm:gap-3 min-w-0 select-none no-underline">
         <!-- University Logo Placeholder Emblem -->
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-950 via-blue-900 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-blue-950/20 shrink-0 border border-amber-400/40 relative overflow-hidden group">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-950 via-blue-900 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-blue-950/20 shrink-0 border border-amber-400/40 relative overflow-hidden group">
           <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <i data-lucide="flame" class="w-7 h-7 text-amber-400"></i>
         </div>
         
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <h1 class="text-sm sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight whitespace-nowrap">
               جامعة ذي قار
             </h1>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <span class="hidden xl:inline-flex text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
               كلية الهندسة
             </span>
           </div>
-          <p class="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+          <p class="hidden md:block text-[11px] xl:text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5 whitespace-nowrap">
             قسم هندسة النفط والغاز • البوابة الأكاديمية
           </p>
         </div>
-      </div>
+      </a>
 
       <!-- Desktop Navigation Menu -->
-      <nav class="hidden lg:flex items-center gap-6 text-xs sm:text-sm font-bold">
-        <a href="#/" data-nav-target="home" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">الرئيسية</a>
-        <a href="#/year/year-1" data-nav-target="year-1" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الأولى</a>
-        <a href="#/year/year-2" data-nav-target="year-2" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الثانية</a>
-        <a href="#/year/year-3" data-nav-target="year-3" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الثالثة</a>
-        <a href="#/year/year-4" data-nav-target="year-4" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">المرحلة الرابعة</a>
-        <a href="#/about" data-nav-target="about" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">عن القسم</a>
-        <a href="#/contact" data-nav-target="contact" class="py-2 transition-colors hover:text-amber-600 dark:hover:text-amber-400">تواصل معنا</a>
+      <nav aria-label="التنقل الرئيسي" class="hidden xl:flex items-center gap-1 text-xs font-bold whitespace-nowrap">
+        <a href="#/" data-nav-target="home" class="nav-link">الرئيسية</a>
+        <details id="desktop-stages-menu" class="relative">
+          <summary class="nav-link list-none cursor-pointer inline-flex items-center gap-1.5">
+            <span>المراحل الدراسية</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform"></i>
+          </summary>
+          <div class="nav-dropdown absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 shadow-xl shadow-slate-950/10" role="group" aria-label="المراحل الدراسية">
+            <a href="#/year/year-1" data-nav-target="year-1" class="nav-dropdown-link">المرحلة الأولى</a>
+            <a href="#/year/year-2" data-nav-target="year-2" class="nav-dropdown-link">المرحلة الثانية</a>
+            <a href="#/year/year-3" data-nav-target="year-3" class="nav-dropdown-link">المرحلة الثالثة</a>
+            <a href="#/year/year-4" data-nav-target="year-4" class="nav-dropdown-link">المرحلة الرابعة</a>
+          </div>
+        </details>
+        <a href="#/about" data-nav-target="about" class="nav-link">عن القسم</a>
+        <a href="#/contact" data-nav-target="contact" class="nav-link">تواصل معنا</a>
       </nav>
 
       <!-- Right Action Tools -->
-      <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-1 sm:gap-2 xl:gap-3 shrink-0">
         
         <!-- Search Button -->
         <button 
           onclick="App.openGlobalSearch()" 
           title="بحث شامل"
-          class="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+          aria-label="بحث شامل"
+          class="min-w-9 min-h-9 sm:min-w-10 sm:min-h-10 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5"
         >
           <i data-lucide="search" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
           <span class="hidden md:inline">بحث</span>
@@ -101,7 +110,8 @@
         <button 
           onclick="App.toggleTheme()" 
           title="تبديل المظهر (ليلي / نهاري)"
-          class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+          aria-label="تبديل المظهر"
+          class="min-w-9 min-h-9 sm:min-w-10 sm:min-h-10 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
         >
           <i data-lucide="moon" class="theme-icon-moon w-4 h-4"></i>
           <i data-lucide="sun" class="theme-icon-sun w-4 h-4 hidden text-amber-400"></i>
@@ -111,34 +121,52 @@
         <button 
           id="nav-admin-login-btn"
           onclick="App.openAdminLoginModal()"
-          class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white shadow-sm transition-all"
+          aria-label="دخول الإدارة"
+          class="min-h-9 min-w-9 sm:min-h-10 sm:min-w-10 flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white shadow-sm transition-all"
         >
           <i data-lucide="lock" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">دخول الإدارة</span>
+          <span class="hidden md:inline xl:inline">دخول الإدارة</span>
         </button>
 
         <!-- Mobile Menu Hamburger Button -->
         <button 
+          id="mobile-menu-toggle"
+          type="button"
           onclick="App.toggleMobileMenu()"
-          class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
+          class="xl:hidden min-w-9 min-h-9 sm:min-w-10 sm:min-h-10 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600 transition-colors"
+          aria-label="فتح قائمة التنقل"
+          aria-expanded="false"
+          aria-controls="mobile-drawer"
           title="القائمة"
         >
-          <i data-lucide="menu" class="w-5 h-5"></i>
+          <i data-lucide="menu" class="mobile-menu-open-icon w-5 h-5"></i>
+          <i data-lucide="x" class="mobile-menu-close-icon w-5 h-5 hidden"></i>
         </button>
 
       </div>
     </div>
 
     <!-- Mobile Drawer Menu -->
-    <div id="mobile-drawer" class="hidden lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-4 space-y-2">
-      <a href="#/" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">الرئيسية</a>
-      <a href="#/year/year-1" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الأولى</a>
-      <a href="#/year/year-2" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الثانية</a>
-      <a href="#/year/year-3" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الثالثة</a>
-      <a href="#/year/year-4" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">المرحلة الرابعة</a>
-      <a href="#/about" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">عن القسم</a>
-      <a href="#/contact" onclick="App.closeMobileMenu()" class="block px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800">تواصل معنا</a>
-    </div>
+    <nav id="mobile-drawer" aria-label="قائمة التنقل للموبايل" class="mobile-nav-panel hidden xl:hidden">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-sm font-black text-slate-900 dark:text-white">التنقل في المنصة</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">اختر صفحة أو مرحلة دراسية</p>
+          </div>
+          <span class="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 rounded-full px-2.5 py-1">قسم هندسة النفط والغاز</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <a href="#/" data-nav-target="home" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link col-span-2 sm:col-span-1"><i data-lucide="house" class="w-4 h-4"></i><span>الرئيسية</span></a>
+          <a href="#/year/year-1" data-nav-target="year-1" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="graduation-cap" class="w-4 h-4"></i><span>المرحلة الأولى</span></a>
+          <a href="#/year/year-2" data-nav-target="year-2" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="layers-2" class="w-4 h-4"></i><span>المرحلة الثانية</span></a>
+          <a href="#/year/year-3" data-nav-target="year-3" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="flame" class="w-4 h-4"></i><span>المرحلة الثالثة</span></a>
+          <a href="#/year/year-4" data-nav-target="year-4" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="award" class="w-4 h-4"></i><span>المرحلة الرابعة</span></a>
+          <a href="#/about" data-nav-target="about" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="info" class="w-4 h-4"></i><span>عن القسم</span></a>
+          <a href="#/contact" data-nav-target="contact" onclick="App.closeMobileMenu({ restoreFocus: true })" class="mobile-nav-link"><i data-lucide="message-circle" class="w-4 h-4"></i><span>تواصل معنا</span></a>
+        </div>
+      </div>
+    </nav>
   </header>
 
   <!-- ====================================================================
@@ -885,6 +913,6 @@
   <!-- Scripts -->
   <script src="data.js?v=6.0"></script>
   <script src="supabase-client.js?v=6.2"></script>
-  <script src="app.js?v=6.4"></script>
+  <script src="app.js?v=7.0"></script>
 </body>
 </html>

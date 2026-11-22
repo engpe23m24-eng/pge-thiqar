@@ -58,9 +58,38 @@ const App = {
     // إغلاق النوافذ المنبثقة بالزر Escape
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        this.closeMobileMenu({ restoreFocus: true });
+        const desktopStagesMenu = document.getElementById('desktop-stages-menu');
+        if (desktopStagesMenu?.open) {
+          desktopStagesMenu.removeAttribute('open');
+          desktopStagesMenu.querySelector('summary')?.focus();
+        }
         this.closeAllModals();
       }
     });
+
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('mobile-drawer');
+      const toggle = document.getElementById('mobile-menu-toggle');
+      if (
+        menu && !menu.classList.contains('hidden') &&
+        !menu.contains(event.target) && !toggle?.contains(event.target)
+      ) {
+        this.closeMobileMenu();
+      }
+
+      const stagesMenu = document.getElementById('desktop-stages-menu');
+      if (stagesMenu?.open && !stagesMenu.contains(event.target)) {
+        stagesMenu.removeAttribute('open');
+      }
+    });
+
+    const desktopLayout = window.matchMedia('(min-width: 1280px)');
+    const closeMenuForDesktop = event => {
+      if (event.matches) this.closeMobileMenu();
+    };
+    if (desktopLayout.addEventListener) desktopLayout.addEventListener('change', closeMenuForDesktop);
+    else if (desktopLayout.addListener) desktopLayout.addListener(closeMenuForDesktop);
 
     // تحديث أيقونات Lucide بعد كل إعادة رسم
     window.addEventListener('academic-data-updated', () => {
@@ -129,6 +158,8 @@ const App = {
 
     // إغلاق القائمة الجانبية للموبايل عند التنقل
     this.closeMobileMenu();
+    const desktopStagesMenu = document.getElementById('desktop-stages-menu');
+    if (desktopStagesMenu) desktopStagesMenu.removeAttribute('open');
     // تمرير الشاشة إلى الأعلى
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -250,18 +281,26 @@ const App = {
     document.querySelectorAll('[data-nav-target]').forEach(link => {
       const target = link.getAttribute('data-nav-target');
       const targetYear = window.academicDB.getYearById(target);
-      if (
+      const isActive = Boolean(
         (target === 'home' && this.currentRoute === 'home') ||
         (currentYear && targetYear && currentYear.id === targetYear.id) ||
         (target === this.currentRoute)
-      ) {
-        link.classList.add('text-amber-500', 'font-bold', 'border-b-2', 'border-amber-500');
-        link.classList.remove('text-slate-600', 'dark:text-slate-300');
+      );
+      link.classList.toggle('is-active', isActive);
+      if (isActive) {
+        link.setAttribute('aria-current', 'page');
       } else {
-        link.classList.remove('text-amber-500', 'font-bold', 'border-b-2', 'border-amber-500');
-        link.classList.add('text-slate-600', 'dark:text-slate-300');
+        link.removeAttribute('aria-current');
       }
     });
+
+    const stagesMenu = document.getElementById('desktop-stages-menu');
+    const stagesSummary = stagesMenu?.querySelector('summary');
+    if (stagesSummary) {
+      stagesSummary.classList.toggle('is-active', Boolean(currentYear));
+      if (currentYear) stagesSummary.setAttribute('aria-current', 'page');
+      else stagesSummary.removeAttribute('aria-current');
+    }
   },
 
   // ====================================================================
@@ -2759,14 +2798,16 @@ const App = {
       if (isLogged) {
         loginNavBtn.innerHTML = `
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-          <span class="hidden sm:inline">لوحة الإدارة</span>
+          <span class="hidden md:inline">لوحة الإدارة</span>
         `;
+        loginNavBtn.setAttribute('aria-label', 'لوحة الإدارة');
         loginNavBtn.onclick = () => App.navigateTo('admin');
       } else {
         loginNavBtn.innerHTML = `
           <i data-lucide="lock" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">دخول الإدارة</span>
+          <span class="hidden md:inline">دخول الإدارة</span>
         `;
+        loginNavBtn.setAttribute('aria-label', 'دخول الإدارة');
         loginNavBtn.onclick = () => App.openAdminLoginModal();
       }
     }
@@ -2847,15 +2888,30 @@ const App = {
   toggleMobileMenu() {
     const menu = document.getElementById('mobile-drawer');
     if (menu) {
-      menu.classList.toggle('hidden');
+      const isOpening = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !isOpening);
+      this.updateMobileMenuButton(isOpening);
+      if (isOpening) menu.querySelector('a')?.focus();
     }
   },
 
-  closeMobileMenu() {
+  updateMobileMenuButton(isOpen) {
+    const toggle = document.getElementById('mobile-menu-toggle');
+    if (!toggle) return;
+    toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    toggle.setAttribute('aria-label', isOpen ? 'إغلاق قائمة التنقل' : 'فتح قائمة التنقل');
+    const openIcon = toggle.querySelector('.mobile-menu-open-icon');
+    const closeIcon = toggle.querySelector('.mobile-menu-close-icon');
+    if (openIcon) openIcon.classList.toggle('hidden', Boolean(isOpen));
+    if (closeIcon) closeIcon.classList.toggle('hidden', !isOpen);
+  },
+
+  closeMobileMenu({ restoreFocus = false } = {}) {
     const menu = document.getElementById('mobile-drawer');
-    if (menu) {
-      menu.classList.add('hidden');
-    }
+    const wasOpen = Boolean(menu && !menu.classList.contains('hidden'));
+    if (menu) menu.classList.add('hidden');
+    this.updateMobileMenuButton(false);
+    if (restoreFocus && wasOpen) document.getElementById('mobile-menu-toggle')?.focus();
   },
 
   showToast(message, type = 'info') {
